@@ -1,1 +1,555 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARES — Asistente Robótico ESpacial</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --accent: #0284c7;
+            --accent-light: #e0f2fe;
+            --text-main: #334155;
+            --text-dark: #0f172a;
+            --bg-light: #f8fafc;
+            --bg-white: #ffffff;
+            --border: #e2e8f0;
+            --success: #059669;
+        }
 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-main);
+            background-color: var(--bg-light);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Navbar */
+        nav {
+            background-color: var(--primary);
+            color: white;
+            padding: 1.25rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav .logo {
+            font-weight: 800;
+            font-size: 1.5rem;
+            letter-spacing: 0.05em;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        nav .logo span {
+            color: var(--accent);
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 2rem;
+        }
+
+        nav ul a {
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        nav ul a:hover {
+            color: white;
+        }
+
+        /* Hero Section */
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 6rem 2rem 4rem 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .header-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        header p {
+            font-size: 1.25rem;
+            color: #94a3b8;
+            max-width: 700px;
+            margin: 0 auto 3rem auto;
+        }
+
+        /* Quick Specs Dashboard */
+        .specs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            max-width: 1100px;
+            margin: 0 auto;
+            transform: translateY(2rem);
+        }
+
+        .spec-card {
+            background: var(--bg-white);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .spec-card .number {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 0.25rem;
+        }
+
+        .spec-card .label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-dark);
+            letter-spacing: 0.05em;
+        }
+
+        .spec-card .sub {
+            font-size: 0.8rem;
+            color: var(--text-main);
+            margin-top: 0.25rem;
+        }
+
+        /* Main Content Structure */
+        main {
+            max-width: 1100px;
+            margin: 5rem auto 4rem auto;
+            padding: 0 1.5rem;
+        }
+
+        section {
+            background: var(--bg-white);
+            padding: 3rem;
+            border-radius: 16px;
+            margin-bottom: 3rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+            border: 1px solid var(--border);
+        }
+
+        .section-tag {
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.75rem;
+            display: inline-block;
+        }
+
+        h2 {
+            font-size: 2rem;
+            color: var(--text-dark);
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+            border-left: 5px solid var(--accent);
+            padding-left: 1rem;
+        }
+
+        .intro-text {
+            font-size: 1.1rem;
+            margin-bottom: 2.5rem;
+            color: var(--text-main);
+            line-height: 1.7;
+        }
+
+        /* Subsections Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-box {
+            background: var(--bg-light);
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .feature-box:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        h3 svg {
+            color: var(--accent);
+            flex-shrink: 0;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            font-size: 0.975rem;
+            color: var(--text-main);
+        }
+
+        p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Technical Highlight Callout */
+        .highlight-banner {
+            background: var(--accent-light);
+            border-left: 4px solid var(--accent);
+            padding: 1.5rem;
+            border-radius: 0 12px 12px 0;
+            margin-top: 1.5rem;
+        }
+
+        .highlight-banner h4 {
+            color: var(--text-dark);
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .highlight-banner p {
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            margin-bottom: 0;
+        }
+
+        /* List styling */
+        ul.custom-list {
+            list-style: none;
+            margin-top: 1rem;
+        }
+
+        ul.custom-list li {
+            position: relative;
+            padding-left: 1.75rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.95rem;
+        }
+
+        ul.custom-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--primary);
+            color: #94a3b8;
+            padding: 4rem 2rem;
+            text-align: center;
+            font-size: 0.9rem;
+            border-top: 4px solid var(--accent);
+        }
+
+        footer p {
+            color: #64748b;
+            margin-top: 1rem;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2.25rem;
+            }
+            section {
+                padding: 2rem;
+            }
+            nav ul {
+                display: none; /* Simplification for clean presentation mobile */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            ARES<span>.</span>
+        </div>
+        <ul>
+            <li><a href="#movilidad">Movilidad</a></li>
+            <li><a href="#riesgos">Prevención</a></li>
+            <li><a href="#operacion">Operación</a></li>
+            <li><a href="#ventajas">Ventajas</a></li>
+        </ul>
+    </nav>
+
+    <!-- Header / Hero -->
+    <header>
+        <div class="header-container">
+            <span style="color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; font-size: 0.9rem;">Dossier Técnico Oficial</span>
+            <h1 style="margin-top: 0.5rem;">ARES — Asistente Robótico ESpacial</h1>
+            <p>Infraestructura robótica avanzada de alta precisión para el mantenimiento exterior, manipulación de componentes y optimización operativa de la plataforma Starship.</p>
+        </div>
+
+        <!-- Dashboard de especificaciones clave -->
+        <div class="specs-grid">
+            <div class="spec-card">
+                <div class="number">27.6 m</div>
+                <div class="label">Alcance Total</div>
+                <div class="sub">6 segmentos de 4.6 m</div>
+            </div>
+            <div class="spec-card">
+                <div class="number">9 GDL</div>
+                <div class="label">Grados de Libertad</div>
+                <div class="sub">Máxima destreza espacial</div>
+            </div>
+            <div class="spec-card">
+                <div class="number">0 ms</div>
+                <div class="label">Latencia de Control</div>
+                <div class="sub">Conexión directa cableada</div>
+            </div>
+            <div class="spec-card">
+                <div class="number">10 kWh</div>
+                <div class="label">Batería Integrada</div>
+                <div class="sub">30 min. de respaldo seguro</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+
+        <!-- SECCIÓN 1: MOVILIDAD Y CONTROL -->
+        <section id="movilidad">
+            <span class="section-tag">Fase 01</span>
+            <h2>Movilidad y Control Cinemático</h2>
+            <p class="intro-text">
+                El sistema ARES redefine la ingeniería de manipulación orbital mediante una arquitectura cinemática robusta que permite un acceso absoluto a la superficie externa del vehículo sin comprometer su integridad estructural.
+            </p>
+
+            <div class="features-grid">
+                <div class="feature-box">
+                    <h3>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                        Sistema de Rotación Continua
+                    </h3>
+                    <p>ARES se fija a la Starship mediante un anillo estructural exterior ubicado entre el tanque de metano y la zona de carga. Al no disponer de un eje central expuesto, se implementa un <strong>eje artificial interno</strong> en la zona de transición.</p>
+                    <p>Este eje actúa como anclaje fijo para un motor que transmite potencia al anillo exterior a través de un mecanismo de <strong>piñón-corona dentada</strong> (<em>slewing ring bearing</em>). El resultado es una rotación continua de 360° sobre el eje longitudinal con un torque elevado y un posicionamiento angular milimétrico.</p>
+                </div>
+
+                <div class="feature-box">
+                    <h3>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        Articulación por Harmonic Drives
+                    </h3>
+                    <p>El brazo consta de 6 segmentos articulados. Cada uno de ellos integra un reductor <strong>harmonic drive</strong> de tres componentes (<em>wave generator, flexspline y circular spline</em>) que elimina por completo el juego mecánico (<em>backlash</em>).</p>
+                    <p>Esta tecnología asegura un posicionamiento milimétrico repetible a nivel de fracciones de grado y un control directo del torque, características esenciales para operar con seguridad en el vacío del espacio.</p>
+                </div>
+
+                <div class="feature-box">
+                    <h3>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5.5 5.5 0 0 0 7.5 5C6.2 5 4.9 5.6 4 6.5c-.8.8-1.3 1.5-1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+                        Muñeca Terminal Cardan
+                    </h3>
+                    <p>El extremo distal del brazo cuenta con un <strong>cardan de tres ejes</strong> que emula la flexibilidad de una muñeca humana. Permite orientar las herramientas en cualquier dirección espacial sin necesidad de mover todo el brazo.</p>
+                    <p>Sumando los 6 grados de libertad (GDL) de las articulaciones principales y los 3 GDL de la muñeca, ARES suma un total de <strong>9 grados de libertad</strong>, logrando un alcance total sobre cualquier punto del casco de la nave.</p>
+                </div>
+
+                <div class="feature-box">
+                    <h3>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/><path d="M12 12H3"/></svg>
+                        Operación Manual Inmediata
+                    </h3>
+                    <p>Para garantizar la máxima fiabilidad, el control es estrictamente <strong>manual y en tiempo real</strong>. El operador dirige el sistema desde el interior de la cabina mediante una conexión física directa.</p>
+                    <p>Este cableado atraviesa el casco mediante un <em>feedthrough</em> hermético de presión certificado, eliminando interferencias de radiofrecuencia (RF) y reduciendo la latencia a cero. Cuenta además con un enlace de respaldo por radio UHF de corto alcance.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 2: PREVENCIÓN DE RIESGOS -->
+        <section id="riesgos" style="background-color: var(--bg-light);">
+            <span class="section-tag">Fase 02</span>
+            <h2>Prevención de Riesgos y Seguridad Activa</h2>
+            <p class="intro-text">
+                En entornos orbitales, la seguridad no es opcional. ARES incorpora una arquitectura de seguridad redundante diseñada para proteger tanto la estructura del vehículo como a su tripulación humana.
+            </p>
+
+            <div class="features-grid">
+                <div class="feature-box" style="background: var(--bg-white);">
+                    <h3>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
+                        Fusión Sensorial en Tiempo Real
+                    </h3>
+                    <p>El núcleo de control de ARES unifica de forma constante la información proveniente de cuatro sensores estratégicos para generar un mapa operativo dinámico:</p>
+                    <ul class="custom-list">
+                        <li><strong>LIDAR:</strong> Mapeo en 3D para la detección milimétrica de obstáculos en el entorno inmediato.</li>
+                        <li><strong>IMU:</strong> Monitoreo constante de la aceleración y la orientación espacial de cada segmento.</li>
+                        <li><strong>Giroscopio:</strong> Estabilización angular instantánea ante movimientos o correcciones orbitales de la Starship.</li>
+                        <li><strong>Sensor de Fuerza/Torque (F/T):</strong> Monitoreo de presión en la muñeca para regular la fuerza de contacto exacta sobre las superficies.</li>
+                    </ul>
+                </div>
+
+                <div class="feature-box" style="background: var(--bg-white);">
+                    <h3>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><path d="M7 2v20"/><path d="M17 2v20"/><path d="M2 12h20"/></svg>
+                        Tolerancia a Fallos Computacionales
+                    </h3>
+                    <p>La computadora de vuelo de ARES está estructurada bajo principios rigurosos de alta disponibilidad y tolerancia catastrófica.</p>
+                    <p>Si ocurre una anomalía o fallo electrónico parcial en la unidad primaria, una <strong>arquitectura computacional redundante</strong> transfiere el control a los controladores secundarios de forma inmediata y automática.</p>
+                    <p>Este protocolo garantiza la continuidad de la operación en curso (filosofía <em>fail-operational</em>), blindando las actividades críticas ante imprevistos.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 3: OPERACIÓN EN ENTORNO ESPACIAL -->
+        <section id="operacion">
+            <span class="section-tag">Fase 03</span>
+            <h2>Operación Avanzada en el Entorno Espacial</h2>
+            <p class="intro-text">
+                Cada componente de ARES ha sido diseñado para resistir las condiciones extremas del espacio, optimizando los recursos energéticos y garantizando una versatilidad sin precedentes.
+            </p>
+
+            <div class="features-grid">
+                <div class="feature-box">
+                    <h3>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        Gestión Energética Integrada
+                    </h3>
+                    <p>ARES se acopla directamente al sistema de potencia general de la Starship. Al aprovechar la infraestructura de captación solar de la propia nave, prescinde de paneles fotovoltaicos independientes, lo que aligera la masa del sistema y reduce los puntos potenciales de avería.</p>
+                    <div class="highlight-banner">
+                        <h4>Respaldo de Emergencia Local</h4>
+                        <p>Frente a una interrupción imprevista del suministro del vehículo, ARES activa de forma instantánea una batería LiPo de grado espacial de <strong>10 kWh</strong>, garantizando 30 minutos de autonomía para detener y replegar el brazo de forma totalmente segura.</p>
+                    </div>
+                </div>
+
+                <div class="feature-box">
+                    <h3>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        Brazo Óptico Estereoscópico e Infrarrojo
+                    </h3>
+                    <p>El extremo del brazo aloja un bloque visual sofisticado compuesto por una <strong>cámara estereoscópica de alta definición</strong>. Este sistema calcula la profundidad espacial tridimensional en tiempo real, facilitando la aproximación precisa al casco.</p>
+                    <p>Esta tecnología se complementa con un <strong>canal de visión infrarroja térmica</strong>, el cual asegura visibilidad completa tanto bajo exposición solar directa (+120 °C) como en el cono de sombra de la Tierra (-150 °C), abarcando la totalidad del ciclo orbital sin interrupciones.</p>
+                </div>
+            </div>
+
+            <!-- Destacado: El Sistema Revólver -->
+            <div class="feature-box" style="margin-top: 2rem; background: var(--bg-light);">
+                <h3 style="color: var(--text-dark); font-size: 1.4rem;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M3 12h3m12 0h3M12 3v3m0 12v3"/></svg>
+                    Sistema de Intercambio de Herramientas tipo Revólver
+                </h3>
+                <p style="margin-bottom: 1rem; font-size: 1.05rem;">
+                    Ubicado en el segmento distal, un tambor rotatorio automatizado de <strong>6 a 8 bahías de almacenamiento</strong> aloja instrumental técnico especializado (llaves, destornilladores, sondas de medición). Su funcionamiento óptico y mecánico asegura una polivalencia absoluta en órbita:
+                </p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+                    <div>
+                        <strong style="color: var(--text-dark); display:block; margin-bottom: 0.25rem;">Indexación de Alta Velocidad</strong>
+                        Un motor síncrono <em>brushless</em> con encoder acopla la herramienta necesaria alineándola con precisión milimétrica en un intervalo de <strong>3 a 5 segundos</strong>.
+                    </div>
+                    <div>
+                        <strong style="color: var(--text-dark); display:block; margin-bottom: 0.25rem;">Anclaje de Seguridad Pasiva</strong>
+                        La fijación se realiza mediante una interfaz de bayoneta reforzada con un <strong>bloqueo magnético pasivo</strong>. Ante cualquier caída de tensión eléctrica, los imanes permanentes retienen la herramienta de manera segura, requiriendo un pulso eléctrico intencionado del solenoide para su liberación.
+                    </div>
+                    <div>
+                        <strong style="color: var(--text-dark); display:block; margin-bottom: 0.25rem;">Resistencia Térmica</strong>
+                        Fabricado íntegramente en aluminio aeroespacial anodizado, el tambor mitiga los efectos extremos del ciclado térmico. Cuenta con cubiertas mecánicas que previenen desplazamientos indeseados causados por vibración o maniobras bruscas de la nave.
+                    </div>
+                </div>
+                <div class="highlight-banner" style="background: white; margin-top: 1.5rem;">
+                    <h4>Efector Final: Pinza Adaptable Inteligente</h4>
+                    <p>La herramienta base operativa consiste en una pinza con extremos articulados adaptables y sensores táctiles distribuidos. Trabajando en armonía con el sensor de la muñeca, implementa un lazo cerrado de control de presión que permite sujetar desde micro-tornillería delicada hasta grandes paneles estructurales sin provocar deformaciones mecánicas.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 4: VENTAJAS PARA FUTURAS MISIONES -->
+        <section id="ventajas" style="border-top: 4px solid var(--accent);">
+            <span class="section-tag">Fase 04</span>
+            <h2>Ventajas Estratégicas y Viabilidad Operativa</h2>
+            <p class="intro-text">
+                ARES no solo representa un logro de ingeniería mecánica, sino una solución directa a las limitaciones logísticas, financieras y de seguridad de la exploración espacial actual.
+            </p>
+
+            <div class="features-grid">
+                <div class="feature-box">
+                    <strong style="color: var(--accent); font-size: 1.5rem; display: block; margin-bottom: 0.5rem;">01</strong>
+                    <h3 style="margin-bottom: 0.5rem;">Reducción Radical del Riesgo Humano en EVA</h3>
+                    <p>Una Actividad Extravehicular (EVA) convencional exige entre 6 y 8 horas de rigurosa preparación física y metabólica, provoca un desgaste mecánico severo en los trajes de presión y expone directamente a los astronautas a dosis críticas de radiación cósmica y micrometeoritos.</p>
+                    <p>Delegar las tareas de mantenimiento de rutina a ARES anula esta ventana de exposición y disminuye drásticamente el coste operativo global de la misión.</p>
+                </div>
+
+                <div class="feature-box">
+                    <strong style="color: var(--accent); font-size: 1.5rem; display: block; margin-bottom: 0.5rem;">02</strong>
+                    <h3 style="margin-bottom: 0.5rem;">Modularidad e Independencia Estructural</h3>
+                    <p>La integración de un eje artificial concéntrico entre el tanque de metano y la zona de carga de la Starship solventa el principal desafío arquitectónico de la nave sin requerir modificaciones profundas en el fuselaje.</p>
+                    <p>Su diseño modular permite el reemplazo selectivo de actuadores harmonic drives, módulos del tambor revólver o el efector terminal en órbita, alargando la vida útil del sistema.</p>
+                </div>
+
+                <div class="feature-box">
+                    <strong style="color: var(--accent); font-size: 1.5rem; display: block; margin-bottom: 0.5rem;">03</strong>
+                    <h3 style="margin-bottom: 0.5rem;">Viabilidad Extendida y Sostenibilidad</h3>
+                    <p>Al priorizar un modo de control manual y directo, se descarta la enorme complejidad e imprevisibilidad de los algoritmos de navegación espacial autónoma total.</p>
+                    <p>El control humano asistido por telemetría asegura respuestas fiables inmediatas ante imprevistos, consolidando al sistema como una herramienta predecible y segura para viajes de larga duración.</p>
+                </div>
+
+                <div class="feature-box">
+                    <strong style="color: var(--accent); font-size: 1.5rem; display: block; margin-bottom: 0.5rem;">04</strong>
+                    <h3 style="margin-bottom: 0.5rem;">Adaptabilidad Natural a Espacio Profundo</h3>
+                    <p>Con adaptaciones estructurales mínimas en la sección de anclaje base, la plataforma tecnológica ARES es completamente escalable y transferible a futuras estaciones orbitales lunares (Gateway) o infraestructuras planetarias marcianas.</p>
+                    <p>Su brazo articulado de 27.6 metros garantiza una cobertura insuperable en estructuras a gran escala sin necesidad de reposicionamiento.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div style="max-width: 600px; margin: 0 auto;">
+            <p style="color: white; font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem;">ARES — Asistente Robótico ESpacial</p>
+            <p style="color: #94a3b8; font-size: 0.9rem;">Documentación Técnica Orientada a la Optimización de Operaciones de Mantenimiento de Vehículos de Próxima Generación.</p>
+            <p>&copy; 2026 Proyecto ARES. Desarrollado bajo estándares aeroespaciales de alta fiabilidad.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
