@@ -1,555 +1,2124 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARES — Asistente Robótico ESpacial</title>
-    <style>
-        :root {
-            --primary: #0f172a;
-            --primary-light: #1e293b;
-            --accent: #0284c7;
-            --accent-light: #e0f2fe;
-            --text-main: #334155;
-            --text-dark: #0f172a;
-            --bg-light: #f8fafc;
-            --bg-white: #ffffff;
-            --border: #e2e8f0;
-            --success: #059669;
-        }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ARES-1 · MISSION CONTROL · Starship Orbital Servicing</title>
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            color: var(--text-main);
-            background-color: var(--bg-light);
-            -webkit-font-smoothing: antialiased;
-        }
+<style>
+  :root {
+    --bg-deep:        #04060b;
+    --panel-bg:       rgba(8, 14, 24, 0.74);
+    --panel-bg-strong:rgba(6, 11, 20, 0.92);
+    --panel-border:   rgba(98, 178, 255, 0.22);
+    --panel-border-2: rgba(255, 255, 255, 0.06);
+    --text:           #e9f0fa;
+    --text-dim:       #8aa0bd;
+    --text-faint:     #5b6e8a;
+    --accent:         #4aa8ff;
+    --accent-2:       #84d4ff;
+    --green:          #2ee27a;
+    --amber:          #ffb547;
+    --red:            #ff5460;
+    --grid:           rgba(74, 168, 255, 0.06);
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%; width: 100%;
+    overflow: hidden; background: var(--bg-deep);
+    font-family: var(--sans); color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  canvas { display: block; }
 
-        /* Navbar */
-        nav {
-            background-color: var(--primary);
-            color: white;
-            padding: 1.25rem 2rem;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+  /* Background grid overlay (subtle technical look) */
+  #grid-overlay {
+    position: fixed; inset: 0; pointer-events: none; z-index: 2;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 80px 80px;
+    mix-blend-mode: screen;
+    opacity: 0.5;
+  }
 
-        nav .logo {
-            font-weight: 800;
-            font-size: 1.5rem;
-            letter-spacing: 0.05em;
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
+  /* Scanline (very subtle) */
+  #scanlines {
+    position: fixed; inset: 0; pointer-events: none; z-index: 3;
+    background: repeating-linear-gradient(
+      0deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 3px
+    );
+    mix-blend-mode: overlay;
+  }
 
-        nav .logo span {
-            color: var(--accent);
-        }
+  /* Corner brackets utility */
+  .bracket {
+    position: absolute; width: 14px; height: 14px;
+    border-color: var(--accent);
+  }
+  .bracket.tl { top:-1px; left:-1px;   border-top: 1px solid;    border-left: 1px solid; }
+  .bracket.tr { top:-1px; right:-1px;  border-top: 1px solid;    border-right: 1px solid; }
+  .bracket.bl { bottom:-1px; left:-1px;  border-bottom: 1px solid; border-left: 1px solid; }
+  .bracket.br { bottom:-1px; right:-1px; border-bottom: 1px solid; border-right: 1px solid; }
 
-        nav ul {
-            list-style: none;
-            display: flex;
-            gap: 2rem;
-        }
+  /* Generic panel */
+  .panel {
+    position: fixed; z-index: 10;
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    backdrop-filter: blur(14px) saturate(120%);
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+    padding: 12px 14px;
+    pointer-events: none;
+    box-shadow: 0 0 40px rgba(74, 168, 255, 0.08), inset 0 0 0 1px var(--panel-border-2);
+  }
+  .panel h2 {
+    margin: 0 0 8px 0;
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    color: var(--text-dim);
+    font-weight: 500;
+    text-transform: uppercase;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel h2 .id {
+    font-family: var(--mono);
+    color: var(--accent-2);
+    letter-spacing: 1px;
+  }
 
-        nav ul a {
-            color: #cbd5e1;
-            text-decoration: none;
-            font-size: 0.95rem;
-            font-weight: 500;
-            transition: color 0.2s ease;
-        }
+  /* Top-left: Mission badge */
+  #panel-mission {
+    top: 18px; left: 18px;
+    width: 280px;
+    padding: 14px 16px;
+  }
+  #panel-mission .logo-row {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+  }
+  #panel-mission .badge {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #1d3a66 0%, #0a1426 60%, #02060c 100%);
+    border: 1px solid var(--accent);
+    box-shadow: 0 0 14px rgba(74,168,255,0.35), inset 0 0 12px rgba(74,168,255,0.3);
+    position: relative;
+    flex-shrink: 0;
+  }
+  #panel-mission .badge::before {
+    content: ""; position: absolute; inset: 6px;
+    border-radius: 50%; border: 1px dashed rgba(132, 212, 255, 0.5);
+    animation: rotateSlow 22s linear infinite;
+  }
+  #panel-mission .badge::after {
+    content: "ARES"; position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-weight: 600;
+    font-size: 9px; letter-spacing: 1.5px; color: var(--accent-2);
+    text-shadow: 0 0 6px rgba(132,212,255,0.6);
+  }
+  @keyframes rotateSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  #panel-mission .title {
+    font-size: 14px; font-weight: 600; letter-spacing: 1.5px; line-height: 1.1;
+  }
+  #panel-mission .subtitle {
+    font-size: 10px; color: var(--text-dim);
+    letter-spacing: 1.5px; text-transform: uppercase;
+    margin-top: 2px;
+  }
+  #panel-mission .met {
+    font-family: var(--mono);
+    font-size: 22px; font-weight: 500;
+    color: var(--accent-2);
+    letter-spacing: 2px;
+    margin: 8px 0 4px 0;
+    text-shadow: 0 0 12px rgba(132,212,255,0.5);
+  }
+  #panel-mission .met-label {
+    font-family: var(--mono); font-size: 9px;
+    color: var(--text-faint); letter-spacing: 2px;
+  }
+  #panel-mission .status-row {
+    display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap;
+  }
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 2px 8px;
+    background: rgba(46, 226, 122, 0.08);
+    border: 1px solid rgba(46, 226, 122, 0.35);
+    border-radius: 999px;
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 1px; color: var(--green);
+  }
+  .pill .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s ease-in-out infinite; }
+  .pill.amber { background: rgba(255,181,71,0.08); border-color: rgba(255,181,71,0.4); color: var(--amber); }
+  .pill.amber .dot { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-        nav ul a:hover {
-            color: white;
-        }
+  /* Top-right: Spacecraft status */
+  #panel-spacecraft {
+    top: 18px; right: 18px;
+    width: 260px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  #panel-spacecraft .row {
+    display: flex; justify-content: space-between;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  #panel-spacecraft .row:last-child { border-bottom: none; }
+  #panel-spacecraft .key { color: var(--text-faint); }
+  #panel-spacecraft .val { color: var(--text); font-weight: 500; }
+  #panel-spacecraft .val.green { color: var(--green); }
+  #panel-spacecraft .val.amber { color: var(--amber); }
 
-        /* Hero Section */
-        header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-            color: white;
-            padding: 6rem 2rem 4rem 2rem;
-            text-align: center;
-            position: relative;
-        }
+  /* Bottom-left: Orbital telemetry */
+  #panel-orbital {
+    bottom: 18px; left: 18px;
+    width: 280px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  #panel-orbital .row { display: flex; justify-content: space-between; padding: 3px 0; }
+  #panel-orbital .key { color: var(--text-faint); }
+  #panel-orbital .val { color: var(--accent-2); }
 
-        .header-container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
+  /* Bottom-center: command log */
+  #panel-log {
+    bottom: 18px; left: 50%; transform: translateX(-50%);
+    width: 480px; max-width: 70vw;
+    height: 110px;
+    font-family: var(--mono); font-size: 10px;
+    overflow: hidden;
+  }
+  #log-list {
+    height: 76px; overflow: hidden;
+    display: flex; flex-direction: column-reverse;
+    gap: 2px;
+  }
+  #log-list .line { color: var(--text-dim); line-height: 1.4; opacity: 0.85; }
+  #log-list .line.ok    { color: var(--green); }
+  #log-list .line.warn  { color: var(--amber); }
+  #log-list .line.err   { color: var(--red); }
+  #log-list .line .t { color: var(--text-faint); margin-right: 8px; }
 
-        header h1 {
-            font-size: 3rem;
-            font-weight: 800;
-            line-height: 1.2;
-            margin-bottom: 1.5rem;
-            letter-spacing: -0.02em;
-        }
+  /* Joint diagnostics (above PiP) */
+  #panel-joints {
+    bottom: 240px; right: 18px;
+    width: 260px;
+    font-family: var(--mono); font-size: 10px;
+  }
+  .jrow {
+    display: grid; grid-template-columns: 36px 1fr 50px;
+    align-items: center; gap: 8px;
+    padding: 3px 0;
+  }
+  .jrow .lbl { color: var(--text-faint); }
+  .jrow .bar {
+    height: 6px; background: rgba(255,255,255,0.06);
+    border-radius: 3px; position: relative; overflow: hidden;
+  }
+  .jrow .bar .fill {
+    position: absolute; top: 0; bottom: 0;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    box-shadow: 0 0 8px rgba(74,168,255,0.6);
+    border-radius: 3px;
+    transition: width 0.15s ease;
+  }
+  .jrow .val { color: var(--text); text-align: right; }
 
-        header p {
-            font-size: 1.25rem;
-            color: #94a3b8;
-            max-width: 700px;
-            margin: 0 auto 3rem auto;
-        }
+  /* PiP camera */
+  #pip-wrap {
+    position: fixed; right: 18px; bottom: 18px;
+    width: 320px; height: 200px;
+    border: 1px solid var(--panel-border);
+    border-radius: 8px; overflow: hidden;
+    background: #000;
+    box-shadow: 0 0 40px rgba(74,168,255,0.15);
+    z-index: 11;
+    pointer-events: none;
+  }
+  #pip-wrap .pip-label {
+    position: absolute; top: 8px; left: 10px;
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 1.5px; color: var(--green);
+    text-shadow: 0 0 6px rgba(46,226,122,0.6);
+    z-index: 3;
+  }
+  #pip-wrap .pip-rec {
+    position: absolute; top: 8px; right: 10px;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--red); display: flex; align-items: center; gap: 5px;
+    z-index: 3;
+  }
+  #pip-wrap .pip-rec .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); box-shadow: 0 0 6px var(--red); animation: pulse 1s ease-in-out infinite; }
+  #pip-wrap .reticle {
+    position: absolute; inset: 0;
+    z-index: 2; pointer-events: none;
+    background:
+      linear-gradient(transparent 49.6%, rgba(46,226,122,0.4) 49.6% 50.4%, transparent 50.4%),
+      linear-gradient(90deg, transparent 49.6%, rgba(46,226,122,0.4) 49.6% 50.4%, transparent 50.4%);
+  }
+  #pip-wrap .corners::before, #pip-wrap .corners::after,
+  #pip-wrap .corners > i::before, #pip-wrap .corners > i::after {
+    content: ""; position: absolute; width: 16px; height: 16px;
+    border-color: var(--green); pointer-events: none;
+  }
+  #pip-wrap .corners::before { top: 26px; left: 10px; border-top: 1px solid; border-left: 1px solid; }
+  #pip-wrap .corners::after  { top: 26px; right: 10px; border-top: 1px solid; border-right: 1px solid; }
+  #pip-wrap .corners > i::before { bottom: 10px; left: 10px; border-bottom: 1px solid; border-left: 1px solid; }
+  #pip-wrap .corners > i::after  { bottom: 10px; right: 10px; border-bottom: 1px solid; border-right: 1px solid; }
+  #pip-wrap .corners > i {
+    position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  }
+  #pip-wrap .footer {
+    position: absolute; bottom: 6px; left: 10px; right: 10px;
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: 9px; color: var(--green);
+    text-shadow: 0 0 4px rgba(46,226,122,0.5);
+    z-index: 3;
+  }
 
-        /* Quick Specs Dashboard */
-        .specs-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            max-width: 1100px;
-            margin: 0 auto;
-            transform: translateY(2rem);
-        }
+  /* Preset buttons */
+  #panel-presets {
+    top: 18px; left: 50%; transform: translateX(-50%);
+    pointer-events: auto;
+    display: flex; gap: 6px;
+    padding: 8px 10px;
+  }
+  #panel-presets .preset {
+    pointer-events: auto;
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 1.5px;
+    padding: 6px 12px;
+    background: rgba(74, 168, 255, 0.06);
+    border: 1px solid rgba(74, 168, 255, 0.25);
+    color: var(--text);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+  #panel-presets .preset:hover {
+    background: rgba(74, 168, 255, 0.18);
+    border-color: var(--accent);
+    color: var(--accent-2);
+    box-shadow: 0 0 10px rgba(74,168,255,0.4);
+  }
+  #panel-presets .preset.active {
+    background: rgba(74, 168, 255, 0.25);
+    border-color: var(--accent);
+    color: var(--accent-2);
+  }
 
-        .spec-card {
-            background: var(--bg-white);
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
-            text-align: center;
-            border: 1px solid var(--border);
-        }
+  /* lil-gui overrides (right side) */
+  .lil-gui.root {
+    --background-color: rgba(6, 11, 20, 0.85);
+    --text-color: #e9f0fa;
+    --title-background-color: rgba(74, 168, 255, 0.16);
+    --title-text-color: #84d4ff;
+    --widget-color: rgba(255, 255, 255, 0.06);
+    --hover-color: rgba(74, 168, 255, 0.22);
+    --focus-color: rgba(74, 168, 255, 0.32);
+    --number-color: #84d4ff;
+    --string-color: #cfe6ff;
+    --font-size: 11px;
+    --width: 290px;
+    --widget-height: 22px;
+    --font-family-mono: "JetBrains Mono", monospace;
+    --font-family: "Inter", sans-serif;
+    backdrop-filter: blur(14px) saturate(120%);
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(74, 168, 255, 0.08);
+  }
+  .lil-gui.root { right: 18px !important; top: 200px !important; }
 
-        .spec-card .number {
-            font-size: 2.25rem;
-            font-weight: 700;
-            color: var(--accent);
-            margin-bottom: 0.25rem;
-        }
+  /* ── TAB NAVIGATION ─────────────────────────────────────────── */
+  #tab-nav {
+    position: fixed; top: 0; left: 0; right: 0; height: 44px;
+    z-index: 250;
+    background: rgba(4, 6, 11, 0.97);
+    border-bottom: 1px solid rgba(74, 168, 255, 0.25);
+    backdrop-filter: blur(16px) saturate(130%);
+    -webkit-backdrop-filter: blur(16px) saturate(130%);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px; pointer-events: auto;
+  }
+  .tab-brand {
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 2.5px; color: var(--accent-2);
+    display: flex; align-items: center; gap: 8px;
+    text-transform: uppercase; user-select: none;
+  }
+  .brand-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2s ease-in-out infinite; flex-shrink: 0;
+  }
+  .tab-buttons { display: flex; align-items: stretch; height: 100%; gap: 2px; }
+  .tab-btn {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 2px;
+    padding: 0 16px;
+    background: transparent;
+    border: none; border-bottom: 2px solid transparent;
+    color: var(--text-dim); cursor: pointer;
+    transition: all 0.18s; text-transform: uppercase;
+  }
+  .tab-btn:hover { color: var(--accent-2); background: rgba(74,168,255,0.06); }
+  .tab-btn.active {
+    color: var(--accent-2); border-bottom-color: var(--accent);
+    background: rgba(74,168,255,0.08);
+  }
 
-        .spec-card .label {
-            font-size: 0.875rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            color: var(--text-dark);
-            letter-spacing: 0.05em;
-        }
+  /* ── TAB CONTENT PANELS ──────────────────────────────────────── */
+  .tab-panel {
+    position: fixed; top: 44px; left: 0; right: 0; bottom: 0;
+    overflow-y: auto; background: var(--bg-deep); z-index: 50;
+  }
+  .tab-inner { max-width: 1100px; margin: 0 auto; padding: 52px 40px; }
+  .tab-heading {
+    font-family: var(--mono); font-size: 22px;
+    letter-spacing: 3px; color: var(--accent-2); margin: 0 0 8px;
+  }
+  .tab-lead {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--text-dim); letter-spacing: 2px; margin: 0 0 44px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(74,168,255,0.12);
+  }
+  /* Docs */
+  .docs-img-frame {
+    border: 1px solid var(--panel-border); border-radius: 10px;
+    overflow: hidden; box-shadow: 0 0 60px rgba(74,168,255,0.1); background: #000;
+  }
+  .docs-img-frame img { width: 100%; display: block; object-fit: contain; }
+  .docs-desc {
+    margin-top: 32px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .docs-card {
+    background: var(--panel-bg); border: 1px solid var(--panel-border);
+    border-radius: 8px; padding: 20px; backdrop-filter: blur(14px);
+  }
+  .docs-card h3 {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 2.5px;
+    color: var(--accent); text-transform: uppercase; margin: 0 0 10px;
+  }
+  .docs-card p { font-size: 13px; color: var(--text-dim); line-height: 1.65; margin: 0; }
+  /* Contact */
+  .contact-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+  }
+  .contact-card {
+    background: var(--panel-bg); border: 1px solid var(--panel-border);
+    border-radius: 10px; padding: 22px 24px;
+    display: flex; align-items: center; gap: 18px;
+    transition: border-color 0.2s, box-shadow 0.2s; backdrop-filter: blur(14px);
+  }
+  .contact-card:hover {
+    border-color: rgba(74,168,255,0.5);
+    box-shadow: 0 0 28px rgba(74,168,255,0.12);
+  }
+  .contact-avatar {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, rgba(74,168,255,0.25), rgba(74,168,255,0.04));
+    border: 1px solid rgba(74,168,255,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+    color: var(--accent-2); flex-shrink: 0; letter-spacing: 1px;
+  }
+  .contact-info { flex: 1; min-width: 0; }
+  .contact-name { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .contact-email {
+    font-family: var(--mono); font-size: 11px; color: var(--accent);
+    text-decoration: none; letter-spacing: 0.5px; word-break: break-all; display: block;
+  }
+  .contact-email:hover { color: var(--accent-2); text-decoration: underline; }
+  .contact-tag {
+    display: inline-block; margin-top: 8px;
+    font-family: var(--mono); font-size: 8px; letter-spacing: 2px;
+    color: var(--text-faint); text-transform: uppercase;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 3px; padding: 2px 6px;
+  }
+  /* Shift top panels down to clear the tab nav */
+  #panel-mission    { top: 62px !important; }
+  #panel-spacecraft { top: 62px !important; }
+  #panel-presets    { top: 62px !important; }
+  .lil-gui.root     { top: 244px !important; }
 
-        .spec-card .sub {
-            font-size: 0.8rem;
-            color: var(--text-main);
-            margin-top: 0.25rem;
-        }
-
-        /* Main Content Structure */
-        main {
-            max-width: 1100px;
-            margin: 5rem auto 4rem auto;
-            padding: 0 1.5rem;
-        }
-
-        section {
-            background: var(--bg-white);
-            padding: 3rem;
-            border-radius: 16px;
-            margin-bottom: 3rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
-            border: 1px solid var(--border);
-        }
-
-        .section-tag {
-            color: var(--accent);
-            font-weight: 700;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 0.75rem;
-            display: inline-block;
-        }
-
-        h2 {
-            font-size: 2rem;
-            color: var(--text-dark);
-            margin-bottom: 1.5rem;
-            font-weight: 700;
-            border-left: 5px solid var(--accent);
-            padding-left: 1rem;
-        }
-
-        .intro-text {
-            font-size: 1.1rem;
-            margin-bottom: 2.5rem;
-            color: var(--text-main);
-            line-height: 1.7;
-        }
-
-        /* Subsections Grid */
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        .feature-box {
-            background: var(--bg-light);
-            padding: 2rem;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .feature-box:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
-        }
-
-        h3 {
-            font-size: 1.25rem;
-            color: var(--text-dark);
-            margin-bottom: 1rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        h3 svg {
-            color: var(--accent);
-            flex-shrink: 0;
-        }
-
-        p {
-            margin-bottom: 1rem;
-            font-size: 0.975rem;
-            color: var(--text-main);
-        }
-
-        p:last-child {
-            margin-bottom: 0;
-        }
-
-        /* Technical Highlight Callout */
-        .highlight-banner {
-            background: var(--accent-light);
-            border-left: 4px solid var(--accent);
-            padding: 1.5rem;
-            border-radius: 0 12px 12px 0;
-            margin-top: 1.5rem;
-        }
-
-        .highlight-banner h4 {
-            color: var(--text-dark);
-            font-size: 1rem;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
-
-        .highlight-banner p {
-            font-size: 0.9rem;
-            color: var(--text-dark);
-            margin-bottom: 0;
-        }
-
-        /* List styling */
-        ul.custom-list {
-            list-style: none;
-            margin-top: 1rem;
-        }
-
-        ul.custom-list li {
-            position: relative;
-            padding-left: 1.75rem;
-            margin-bottom: 0.75rem;
-            font-size: 0.95rem;
-        }
-
-        ul.custom-list li::before {
-            content: "✓";
-            position: absolute;
-            left: 0;
-            color: var(--success);
-            font-weight: bold;
-        }
-
-        /* Footer */
-        footer {
-            background-color: var(--primary);
-            color: #94a3b8;
-            padding: 4rem 2rem;
-            text-align: center;
-            font-size: 0.9rem;
-            border-top: 4px solid var(--accent);
-        }
-
-        footer p {
-            color: #64748b;
-            margin-top: 1rem;
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            header h1 {
-                font-size: 2.25rem;
-            }
-            section {
-                padding: 2rem;
-            }
-            nav ul {
-                display: none; /* Simplification for clean presentation mobile */
-            }
-        }
-    </style>
+  /* Loader */
+  #loader {
+    position: fixed; inset: 0; z-index: 300;
+    background: var(--bg-deep);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    transition: opacity 0.6s;
+  }
+  #loader.hidden { opacity: 0; pointer-events: none; }
+  #loader .title {
+    font-family: var(--mono); font-size: 14px;
+    letter-spacing: 4px; color: var(--accent-2);
+    margin-bottom: 16px;
+  }
+  #loader .bar { width: 220px; height: 2px; background: rgba(74,168,255,0.15); position: relative; overflow: hidden; }
+  #loader .bar::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: 0;
+    width: 60%; background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: loaderSlide 1.4s ease-in-out infinite;
+  }
+  @keyframes loaderSlide { 0% { left: -60%; } 100% { left: 100%; } }
+  #loader .sub {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text-faint); letter-spacing: 2px;
+    margin-top: 14px;
+  }
+</style>
 </head>
 <body>
 
-    <!-- Navigation -->
-    <nav>
-        <div class="logo">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            ARES<span>.</span>
+<!-- ============================================== -->
+<!-- TAB NAVIGATION                                 -->
+<!-- ============================================== -->
+<div id="tab-nav">
+  <div class="tab-brand">
+    <span class="brand-dot"></span>
+    ARES-1 · MISSION CONTROL
+  </div>
+  <div class="tab-buttons">
+    <button class="tab-btn active" data-tab="simulator">⊕ SIMULADOR</button>
+    <button class="tab-btn" data-tab="docs">⌕ DOCUMENTACIÓN</button>
+    <button class="tab-btn" data-tab="contact">✉ CONTACTO</button>
+  </div>
+</div>
+
+<div id="loader">
+  <div class="title">INITIALIZING ARES-1</div>
+  <div class="bar"></div>
+  <div class="sub">LOADING ORBITAL ASSETS</div>
+</div>
+
+<!-- ============================================== -->
+<!-- DOCS PANEL                                     -->
+<!-- ============================================== -->
+<div id="tab-docs" class="tab-panel" style="display:none">
+  <div class="tab-inner">
+    <h1 class="tab-heading">ARES — Asistente Robótico ESpacial</h1>
+    <p class="tab-lead">Documentación técnica · Integración completa con Starship · Sistema de servicio orbital</p>
+    <div class="docs-img-frame">
+      <img src="ares_infografico.png" alt="Infografía técnica ARES · Funcionamiento y adaptación a Starship" />
+    </div>
+    <div class="docs-desc">
+      <div class="docs-card">
+        <h3>Movilidad · Corona Dentada</h3>
+        <p>Anillo de corona dentada instalado en la zona interior de la Starship. Permite rotación continua de 360° alrededor del casco mediante sistema piñón-corona dentada.</p>
+      </div>
+      <div class="docs-card">
+        <h3>Articulación · Harmonic Drive</h3>
+        <p>6 segmentos de 4,6 m con harmonic drives (wave generator, flexspline, circular spline) que eliminan el backlash angular. Extensión total: 27,6 m. 6 GDL + 3 en la muñeca.</p>
+      </div>
+      <div class="docs-card">
+        <h3>Muñeca Terminal · Cardán 3 Ejes</h3>
+        <p>Junta de tres ejes equivalente a una muñeca humana, que permite orientar el efector final en cualquier dirección sin necesidad de reposicionar el brazo completo.</p>
+      </div>
+      <div class="docs-card">
+        <h3>Prevención de Riesgos · Fusión Sensorial</h3>
+        <p>Combinación simultánea de LIDAR, IMU, giroscopio y sensor de fuerza/torque en la muñeca. Redundancia computacional: sistema secundario asume el control ante fallo parcial.</p>
+      </div>
+      <div class="docs-card">
+        <h3>Energía · Integración Starship</h3>
+        <p>Alimentación directa desde la red eléctrica de la Starship. Respaldo con batería LiPo de grado espacial de ~10 kWh, suficiente para ~30 minutos de operación autónoma activa.</p>
+      </div>
+      <div class="docs-card">
+        <h3>Sistema de Herramientas · Revólver</h3>
+        <p>Tambor rotativo de 6 a 8 bahías intercambiables. Interfaz de bayoneta con bloqueo magnético pasivo. Cambio completo en 3 a 5 segundos. Tolerante a −120 °C.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<!-- CONTACT PANEL                                  -->
+<!-- ============================================== -->
+<div id="tab-contact" class="tab-panel" style="display:none">
+  <div class="tab-inner">
+    <h1 class="tab-heading">EQUIPO · CONTACTO</h1>
+    <p class="tab-lead">Directorio del equipo de desarrollo · ARES-1 Orbital Servicing Program</p>
+    <div class="contact-grid">
+      <div class="contact-card">
+        <div class="contact-avatar">AC</div>
+        <div class="contact-info">
+          <div class="contact-name">Aaron Caruso</div>
+          <a href="mailto:adcaruso09@gmail.com" class="contact-email">adcaruso09@gmail.com</a>
+          <span class="contact-tag">Team Member</span>
         </div>
-        <ul>
-            <li><a href="#movilidad">Movilidad</a></li>
-            <li><a href="#riesgos">Prevención</a></li>
-            <li><a href="#operacion">Operación</a></li>
-            <li><a href="#ventajas">Ventajas</a></li>
-        </ul>
-    </nav>
-
-    <!-- Header / Hero -->
-    <header>
-        <div class="header-container">
-            <span style="color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; font-size: 0.9rem;">Dossier Técnico Oficial</span>
-            <h1 style="margin-top: 0.5rem;">ARES — Asistente Robótico ESpacial</h1>
-            <p>Infraestructura robótica avanzada de alta precisión para el mantenimiento exterior, manipulación de componentes y optimización operativa de la plataforma Starship.</p>
+      </div>
+      <div class="contact-card">
+        <div class="contact-avatar">DG</div>
+        <div class="contact-info">
+          <div class="contact-name">Daniel Gonzalez</div>
+          <a href="mailto:danielgonzalezmannella@gmail.com" class="contact-email">danielgonzalezmannella@gmail.com</a>
+          <span class="contact-tag">Team Member</span>
         </div>
-
-        <!-- Dashboard de especificaciones clave -->
-        <div class="specs-grid">
-            <div class="spec-card">
-                <div class="number">27.6 m</div>
-                <div class="label">Alcance Total</div>
-                <div class="sub">6 segmentos de 4.6 m</div>
-            </div>
-            <div class="spec-card">
-                <div class="number">9 GDL</div>
-                <div class="label">Grados de Libertad</div>
-                <div class="sub">Máxima destreza espacial</div>
-            </div>
-            <div class="spec-card">
-                <div class="number">0 ms</div>
-                <div class="label">Latencia de Control</div>
-                <div class="sub">Conexión directa cableada</div>
-            </div>
-            <div class="spec-card">
-                <div class="number">10 kWh</div>
-                <div class="label">Batería Integrada</div>
-                <div class="sub">30 min. de respaldo seguro</div>
-            </div>
+      </div>
+      <div class="contact-card">
+        <div class="contact-avatar">DF</div>
+        <div class="contact-info">
+          <div class="contact-name">Dante Fernandez</div>
+          <a href="mailto:dantefernandez998@gmail.com" class="contact-email">dantefernandez998@gmail.com</a>
+          <span class="contact-tag">Team Member</span>
         </div>
-    </header>
-
-    <!-- Main Content -->
-    <main>
-
-        <!-- SECCIÓN 1: MOVILIDAD Y CONTROL -->
-        <section id="movilidad">
-            <span class="section-tag">Fase 01</span>
-            <h2>Movilidad y Control Cinemático</h2>
-            <p class="intro-text">
-                El sistema ARES redefine la ingeniería de manipulación orbital mediante una arquitectura cinemática robusta que permite un acceso absoluto a la superficie externa del vehículo sin comprometer su integridad estructural.
-            </p>
-
-            <div class="features-grid">
-                <div class="feature-box">
-                    <h3>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                        Sistema de Rotación Continua
-                    </h3>
-                    <p>ARES se fija a la Starship mediante un anillo estructural exterior ubicado entre el tanque de metano y la zona de carga. Al no disponer de un eje central expuesto, se implementa un <strong>eje artificial interno</strong> en la zona de transición.</p>
-                    <p>Este eje actúa como anclaje fijo para un motor que transmite potencia al anillo exterior a través de un mecanismo de <strong>piñón-corona dentada</strong> (<em>slewing ring bearing</em>). El resultado es una rotación continua de 360° sobre el eje longitudinal con un torque elevado y un posicionamiento angular milimétrico.</p>
-                </div>
-
-                <div class="feature-box">
-                    <h3>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                        Articulación por Harmonic Drives
-                    </h3>
-                    <p>El brazo consta de 6 segmentos articulados. Cada uno de ellos integra un reductor <strong>harmonic drive</strong> de tres componentes (<em>wave generator, flexspline y circular spline</em>) que elimina por completo el juego mecánico (<em>backlash</em>).</p>
-                    <p>Esta tecnología asegura un posicionamiento milimétrico repetible a nivel de fracciones de grado y un control directo del torque, características esenciales para operar con seguridad en el vacío del espacio.</p>
-                </div>
-
-                <div class="feature-box">
-                    <h3>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5.5 5.5 0 0 0 7.5 5C6.2 5 4.9 5.6 4 6.5c-.8.8-1.3 1.5-1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
-                        Muñeca Terminal Cardan
-                    </h3>
-                    <p>El extremo distal del brazo cuenta con un <strong>cardan de tres ejes</strong> que emula la flexibilidad de una muñeca humana. Permite orientar las herramientas en cualquier dirección espacial sin necesidad de mover todo el brazo.</p>
-                    <p>Sumando los 6 grados de libertad (GDL) de las articulaciones principales y los 3 GDL de la muñeca, ARES suma un total de <strong>9 grados de libertad</strong>, logrando un alcance total sobre cualquier punto del casco de la nave.</p>
-                </div>
-
-                <div class="feature-box">
-                    <h3>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/><path d="M12 12H3"/></svg>
-                        Operación Manual Inmediata
-                    </h3>
-                    <p>Para garantizar la máxima fiabilidad, el control es estrictamente <strong>manual y en tiempo real</strong>. El operador dirige el sistema desde el interior de la cabina mediante una conexión física directa.</p>
-                    <p>Este cableado atraviesa el casco mediante un <em>feedthrough</em> hermético de presión certificado, eliminando interferencias de radiofrecuencia (RF) y reduciendo la latencia a cero. Cuenta además con un enlace de respaldo por radio UHF de corto alcance.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- SECCIÓN 2: PREVENCIÓN DE RIESGOS -->
-        <section id="riesgos" style="background-color: var(--bg-light);">
-            <span class="section-tag">Fase 02</span>
-            <h2>Prevención de Riesgos y Seguridad Activa</h2>
-            <p class="intro-text">
-                En entornos orbitales, la seguridad no es opcional. ARES incorpora una arquitectura de seguridad redundante diseñada para proteger tanto la estructura del vehículo como a su tripulación humana.
-            </p>
-
-            <div class="features-grid">
-                <div class="feature-box" style="background: var(--bg-white);">
-                    <h3>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
-                        Fusión Sensorial en Tiempo Real
-                    </h3>
-                    <p>El núcleo de control de ARES unifica de forma constante la información proveniente de cuatro sensores estratégicos para generar un mapa operativo dinámico:</p>
-                    <ul class="custom-list">
-                        <li><strong>LIDAR:</strong> Mapeo en 3D para la detección milimétrica de obstáculos en el entorno inmediato.</li>
-                        <li><strong>IMU:</strong> Monitoreo constante de la aceleración y la orientación espacial de cada segmento.</li>
-                        <li><strong>Giroscopio:</strong> Estabilización angular instantánea ante movimientos o correcciones orbitales de la Starship.</li>
-                        <li><strong>Sensor de Fuerza/Torque (F/T):</strong> Monitoreo de presión en la muñeca para regular la fuerza de contacto exacta sobre las superficies.</li>
-                    </ul>
-                </div>
-
-                <div class="feature-box" style="background: var(--bg-white);">
-                    <h3>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><path d="M7 2v20"/><path d="M17 2v20"/><path d="M2 12h20"/></svg>
-                        Tolerancia a Fallos Computacionales
-                    </h3>
-                    <p>La computadora de vuelo de ARES está estructurada bajo principios rigurosos de alta disponibilidad y tolerancia catastrófica.</p>
-                    <p>Si ocurre una anomalía o fallo electrónico parcial en la unidad primaria, una <strong>arquitectura computacional redundante</strong> transfiere el control a los controladores secundarios de forma inmediata y automática.</p>
-                    <p>Este protocolo garantiza la continuidad de la operación en curso (filosofía <em>fail-operational</em>), blindando las actividades críticas ante imprevistos.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- SECCIÓN 3: OPERACIÓN EN ENTORNO ESPACIAL -->
-        <section id="operacion">
-            <span class="section-tag">Fase 03</span>
-            <h2>Operación Avanzada en el Entorno Espacial</h2>
-            <p class="intro-text">
-                Cada componente de ARES ha sido diseñado para resistir las condiciones extremas del espacio, optimizando los recursos energéticos y garantizando una versatilidad sin precedentes.
-            </p>
-
-            <div class="features-grid">
-                <div class="feature-box">
-                    <h3>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                        Gestión Energética Integrada
-                    </h3>
-                    <p>ARES se acopla directamente al sistema de potencia general de la Starship. Al aprovechar la infraestructura de captación solar de la propia nave, prescinde de paneles fotovoltaicos independientes, lo que aligera la masa del sistema y reduce los puntos potenciales de avería.</p>
-                    <div class="highlight-banner">
-                        <h4>Respaldo de Emergencia Local</h4>
-                        <p>Frente a una interrupción imprevista del suministro del vehículo, ARES activa de forma instantánea una batería LiPo de grado espacial de <strong>10 kWh</strong>, garantizando 30 minutos de autonomía para detener y replegar el brazo de forma totalmente segura.</p>
-                    </div>
-                </div>
-
-                <div class="feature-box">
-                    <h3>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                        Brazo Óptico Estereoscópico e Infrarrojo
-                    </h3>
-                    <p>El extremo del brazo aloja un bloque visual sofisticado compuesto por una <strong>cámara estereoscópica de alta definición</strong>. Este sistema calcula la profundidad espacial tridimensional en tiempo real, facilitando la aproximación precisa al casco.</p>
-                    <p>Esta tecnología se complementa con un <strong>canal de visión infrarroja térmica</strong>, el cual asegura visibilidad completa tanto bajo exposición solar directa (+120 °C) como en el cono de sombra de la Tierra (-150 °C), abarcando la totalidad del ciclo orbital sin interrupciones.</p>
-                </div>
-            </div>
-
-            <!-- Destacado: El Sistema Revólver -->
-            <div class="feature-box" style="margin-top: 2rem; background: var(--bg-light);">
-                <h3 style="color: var(--text-dark); font-size: 1.4rem;">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M3 12h3m12 0h3M12 3v3m0 12v3"/></svg>
-                    Sistema de Intercambio de Herramientas tipo Revólver
-                </h3>
-                <p style="margin-bottom: 1rem; font-size: 1.05rem;">
-                    Ubicado en el segmento distal, un tambor rotatorio automatizado de <strong>6 a 8 bahías de almacenamiento</strong> aloja instrumental técnico especializado (llaves, destornilladores, sondas de medición). Su funcionamiento óptico y mecánico asegura una polivalencia absoluta en órbita:
-                </p>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
-                    <div>
-                        <strong style="color: var(--text-dark); display:block; margin-bottom: 0.25rem;">Indexación de Alta Velocidad</strong>
-                        Un motor síncrono <em>brushless</em> con encoder acopla la herramienta necesaria alineándola con precisión milimétrica en un intervalo de <strong>3 a 5 segundos</strong>.
-                    </div>
-                    <div>
-                        <strong style="color: var(--text-dark); display:block; margin-bottom: 0.25rem;">Anclaje de Seguridad Pasiva</strong>
-                        La fijación se realiza mediante una interfaz de bayoneta reforzada con un <strong>bloqueo magnético pasivo</strong>. Ante cualquier caída de tensión eléctrica, los imanes permanentes retienen la herramienta de manera segura, requiriendo un pulso eléctrico intencionado del solenoide para su liberación.
-                    </div>
-                    <div>
-                        <strong style="color: var(--text-dark); display:block; margin-bottom: 0.25rem;">Resistencia Térmica</strong>
-                        Fabricado íntegramente en aluminio aeroespacial anodizado, el tambor mitiga los efectos extremos del ciclado térmico. Cuenta con cubiertas mecánicas que previenen desplazamientos indeseados causados por vibración o maniobras bruscas de la nave.
-                    </div>
-                </div>
-                <div class="highlight-banner" style="background: white; margin-top: 1.5rem;">
-                    <h4>Efector Final: Pinza Adaptable Inteligente</h4>
-                    <p>La herramienta base operativa consiste en una pinza con extremos articulados adaptables y sensores táctiles distribuidos. Trabajando en armonía con el sensor de la muñeca, implementa un lazo cerrado de control de presión que permite sujetar desde micro-tornillería delicada hasta grandes paneles estructurales sin provocar deformaciones mecánicas.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- SECCIÓN 4: VENTAJAS PARA FUTURAS MISIONES -->
-        <section id="ventajas" style="border-top: 4px solid var(--accent);">
-            <span class="section-tag">Fase 04</span>
-            <h2>Ventajas Estratégicas y Viabilidad Operativa</h2>
-            <p class="intro-text">
-                ARES no solo representa un logro de ingeniería mecánica, sino una solución directa a las limitaciones logísticas, financieras y de seguridad de la exploración espacial actual.
-            </p>
-
-            <div class="features-grid">
-                <div class="feature-box">
-                    <strong style="color: var(--accent); font-size: 1.5rem; display: block; margin-bottom: 0.5rem;">01</strong>
-                    <h3 style="margin-bottom: 0.5rem;">Reducción Radical del Riesgo Humano en EVA</h3>
-                    <p>Una Actividad Extravehicular (EVA) convencional exige entre 6 y 8 horas de rigurosa preparación física y metabólica, provoca un desgaste mecánico severo en los trajes de presión y expone directamente a los astronautas a dosis críticas de radiación cósmica y micrometeoritos.</p>
-                    <p>Delegar las tareas de mantenimiento de rutina a ARES anula esta ventana de exposición y disminuye drásticamente el coste operativo global de la misión.</p>
-                </div>
-
-                <div class="feature-box">
-                    <strong style="color: var(--accent); font-size: 1.5rem; display: block; margin-bottom: 0.5rem;">02</strong>
-                    <h3 style="margin-bottom: 0.5rem;">Modularidad e Independencia Estructural</h3>
-                    <p>La integración de un eje artificial concéntrico entre el tanque de metano y la zona de carga de la Starship solventa el principal desafío arquitectónico de la nave sin requerir modificaciones profundas en el fuselaje.</p>
-                    <p>Su diseño modular permite el reemplazo selectivo de actuadores harmonic drives, módulos del tambor revólver o el efector terminal en órbita, alargando la vida útil del sistema.</p>
-                </div>
-
-                <div class="feature-box">
-                    <strong style="color: var(--accent); font-size: 1.5rem; display: block; margin-bottom: 0.5rem;">03</strong>
-                    <h3 style="margin-bottom: 0.5rem;">Viabilidad Extendida y Sostenibilidad</h3>
-                    <p>Al priorizar un modo de control manual y directo, se descarta la enorme complejidad e imprevisibilidad de los algoritmos de navegación espacial autónoma total.</p>
-                    <p>El control humano asistido por telemetría asegura respuestas fiables inmediatas ante imprevistos, consolidando al sistema como una herramienta predecible y segura para viajes de larga duración.</p>
-                </div>
-
-                <div class="feature-box">
-                    <strong style="color: var(--accent); font-size: 1.5rem; display: block; margin-bottom: 0.5rem;">04</strong>
-                    <h3 style="margin-bottom: 0.5rem;">Adaptabilidad Natural a Espacio Profundo</h3>
-                    <p>Con adaptaciones estructurales mínimas en la sección de anclaje base, la plataforma tecnológica ARES es completamente escalable y transferible a futuras estaciones orbitales lunares (Gateway) o infraestructuras planetarias marcianas.</p>
-                    <p>Su brazo articulado de 27.6 metros garantiza una cobertura insuperable en estructuras a gran escala sin necesidad de reposicionamiento.</p>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- Footer -->
-    <footer>
-        <div style="max-width: 600px; margin: 0 auto;">
-            <p style="color: white; font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem;">ARES — Asistente Robótico ESpacial</p>
-            <p style="color: #94a3b8; font-size: 0.9rem;">Documentación Técnica Orientada a la Optimización de Operaciones de Mantenimiento de Vehículos de Próxima Generación.</p>
-            <p>&copy; 2026 Proyecto ARES. Desarrollado bajo estándares aeroespaciales de alta fiabilidad.</p>
+      </div>
+      <div class="contact-card">
+        <div class="contact-avatar">SZ</div>
+        <div class="contact-info">
+          <div class="contact-name">Simon Zeballos</div>
+          <a href="mailto:leoozetaa.91@gmail.com" class="contact-email">leoozetaa.91@gmail.com</a>
+          <span class="contact-tag">Team Member</span>
         </div>
-    </footer>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="grid-overlay"></div>
+<div id="scanlines"></div>
+
+<!-- ============================================== -->
+<!-- HUD PANELS                                     -->
+<!-- ============================================== -->
+
+<div id="panel-mission" class="panel">
+  <span class="bracket tl"></span><span class="bracket tr"></span>
+  <span class="bracket bl"></span><span class="bracket br"></span>
+  <div class="logo-row">
+    <div class="badge"></div>
+    <div>
+      <div class="title">ARES-1 · ORBITAL SERVICING</div>
+      <div class="subtitle">Starship · LEO · Mission Control</div>
+    </div>
+  </div>
+  <div class="met-label">MISSION ELAPSED TIME</div>
+  <div class="met" id="met">T+ 00:00:00:00</div>
+  <div class="status-row">
+    <span class="pill"><span class="dot"></span>NOMINAL</span>
+    <span class="pill"><span class="dot"></span>LINK OK</span>
+    <span class="pill"><span class="dot"></span>SUNLIT</span>
+  </div>
+</div>
+
+<div id="panel-spacecraft" class="panel">
+  <span class="bracket tl"></span><span class="bracket tr"></span>
+  <span class="bracket bl"></span><span class="bracket br"></span>
+  <h2>Spacecraft Status <span class="id">SN-49</span></h2>
+  <div class="row"><span class="key">POWER BUS A</span><span class="val green">28.4 V · 142 A</span></div>
+  <div class="row"><span class="key">POWER BUS B</span><span class="val green">28.1 V · 088 A</span></div>
+  <div class="row"><span class="key">THERMAL LOOP</span><span class="val green">+18.6 °C</span></div>
+  <div class="row"><span class="key">CABIN PRESS</span><span class="val green">1011 hPa</span></div>
+  <div class="row"><span class="key">CH4 / LOX</span><span class="val">42% · 38%</span></div>
+  <div class="row"><span class="key">RCS PRESS</span><span class="val green">204 bar</span></div>
+  <div class="row"><span class="key">COMMS DSN</span><span class="val green">−112.4 dBm</span></div>
+  <div class="row"><span class="key">ARES MODE</span><span class="val amber" id="ares-mode">STANDBY</span></div>
+</div>
+
+<div id="panel-orbital" class="panel">
+  <span class="bracket tl"></span><span class="bracket tr"></span>
+  <span class="bracket bl"></span><span class="bracket br"></span>
+  <h2>Orbital Telemetry <span class="id">OMS</span></h2>
+  <div class="row"><span class="key">ALTITUDE   </span><span class="val" id="t-alt">412.6 km</span></div>
+  <div class="row"><span class="key">VELOCITY   </span><span class="val" id="t-vel">7.668 km/s</span></div>
+  <div class="row"><span class="key">PERIOD     </span><span class="val">92m 48s</span></div>
+  <div class="row"><span class="key">INCLINATION</span><span class="val">51.64°</span></div>
+  <div class="row"><span class="key">PERIGEE    </span><span class="val">408 km</span></div>
+  <div class="row"><span class="key">APOGEE     </span><span class="val">418 km</span></div>
+  <div class="row"><span class="key">EPHEMERIS  </span><span class="val" id="t-eph">2026-145/14:22Z</span></div>
+</div>
+
+<div id="panel-joints" class="panel">
+  <span class="bracket tl"></span><span class="bracket tr"></span>
+  <span class="bracket bl"></span><span class="bracket br"></span>
+  <h2>ARES Joint Diagnostics <span class="id">6-DOF</span></h2>
+  <div class="jrow" data-j="ring"><span class="lbl">RING</span><div class="bar"><div class="fill"></div></div><span class="val">0°</span></div>
+  <div class="jrow" data-j="j1"><span class="lbl">J1</span><div class="bar"><div class="fill"></div></div><span class="val">0°</span></div>
+  <div class="jrow" data-j="j2"><span class="lbl">J2</span><div class="bar"><div class="fill"></div></div><span class="val">0°</span></div>
+  <div class="jrow" data-j="j3"><span class="lbl">J3</span><div class="bar"><div class="fill"></div></div><span class="val">0°</span></div>
+  <div class="jrow" data-j="j4"><span class="lbl">J4</span><div class="bar"><div class="fill"></div></div><span class="val">0°</span></div>
+  <div class="jrow" data-j="j5"><span class="lbl">J5</span><div class="bar"><div class="fill"></div></div><span class="val">0°</span></div>
+  <div class="jrow" data-j="j6"><span class="lbl">J6</span><div class="bar"><div class="fill"></div></div><span class="val">0°</span></div>
+</div>
+
+<div id="panel-log" class="panel">
+  <span class="bracket tl"></span><span class="bracket tr"></span>
+  <span class="bracket bl"></span><span class="bracket br"></span>
+  <h2>Command Log <span class="id">CAPCOM</span></h2>
+  <div id="log-list"></div>
+</div>
+
+<div id="panel-presets" class="panel">
+  <span class="bracket tl"></span><span class="bracket tr"></span>
+  <span class="bracket bl"></span><span class="bracket br"></span>
+  <button class="preset" data-preset="stow">⏏ STOW</button>
+  <button class="preset" data-preset="deploy">↗ DEPLOY</button>
+  <button class="preset" data-preset="inspect_bay">⌕ INSPECT BAY</button>
+  <button class="preset" data-preset="inspect_shield">⌕ HEAT SHIELD</button>
+  <button class="preset" data-preset="dock">⊕ DOCK PORT</button>
+  <button class="preset" data-preset="emergency">⚠ EMERG RETRACT</button>
+</div>
+
+<!-- Picture-in-Picture (end-effector camera) -->
+<div id="pip-wrap">
+  <div class="pip-label">CAM-EE · 4K · 60fps</div>
+  <div class="pip-rec"><span class="dot"></span>REC</div>
+  <div class="reticle"></div>
+  <div class="corners"><i></i></div>
+  <div class="footer">
+    <span id="pip-utc">UTC 14:22:08</span>
+    <span>F/2.8 · ISO 200</span>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<!-- THREE.JS                                       -->
+<!-- ============================================== -->
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+    "lil-gui": "https://unpkg.com/lil-gui@0.19.2/dist/lil-gui.esm.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import GUI from 'lil-gui';
+
+/* =====================================================================
+   1.  RENDERER · SCENE · CAMERAS · POST-PROCESSING
+   ================================================================== */
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(
+  50, window.innerWidth / window.innerHeight, 0.1, 12000
+);
+camera.position.set(78, 26, 96);
+
+// PiP camera attached to end-effector
+const pipCamera = new THREE.PerspectiveCamera(42, 320/200, 0.05, 5000);
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true, powerPreference: 'high-performance', stencil: false
+});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.minDistance = 20;
+controls.maxDistance = 900;
+controls.target.set(0, 4, 0);
+
+// Post-processing — bloom for engine glow / LEDs / atmosphere
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  0.55, 0.65, 0.85
+);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+/* =====================================================================
+   2.  LIGHTING
+   ================================================================== */
+const SUN_POS = new THREE.Vector3(320, 180, 200);
+const sun = new THREE.DirectionalLight(0xfff2dc, 4.4);
+sun.position.copy(SUN_POS);
+scene.add(sun);
+
+const ambient = new THREE.AmbientLight(0x1a2a44, 0.22);
+scene.add(ambient);
+
+// Earth-shine: subtle blue uplight
+const earthBounce = new THREE.DirectionalLight(0x4a8cff, 0.6);
+earthBounce.position.set(-20, -160, -60);
+scene.add(earthBounce);
+
+/* =====================================================================
+   3.  STARFIELD WITH MILKY WAY BAND + BRIGHT STARS
+   ================================================================== */
+function makeStars() {
+  const grp = new THREE.Group();
+
+  // Base distant stars
+  const geo = new THREE.BufferGeometry();
+  const COUNT = 12000;
+  const pos = new Float32Array(COUNT*3);
+  const col = new Float32Array(COUNT*3);
+  const sz  = new Float32Array(COUNT);
+
+  // Milky-Way plane axis (random great circle tilt)
+  const galAxis = new THREE.Vector3(0.25, 0.85, 0.45).normalize();
+
+  for (let i = 0; i < COUNT; i++) {
+    let v;
+    let attempts = 0;
+    do {
+      v = new THREE.Vector3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1);
+      attempts++;
+    } while (v.length() < 0.001 && attempts < 5);
+    v.normalize();
+
+    // Bias half of stars toward galactic plane (Milky Way)
+    const projOnAxis = Math.abs(v.dot(galAxis)); // 0=in plane, 1=at pole
+    const inMilkyWay = Math.random() < 0.55 && projOnAxis < 0.18;
+
+    const r = 2200 + Math.random() * 1200;
+    v.multiplyScalar(r);
+    pos[i*3+0] = v.x; pos[i*3+1] = v.y; pos[i*3+2] = v.z;
+
+    const baseI = inMilkyWay ? 0.65 + Math.random() * 0.4 : 0.35 + Math.random() * 0.55;
+    const tint = Math.random();
+    col[i*3+0] = baseI * (tint > 0.92 ? 1.0 : (tint < 0.1 ? 0.7 : 0.9));
+    col[i*3+1] = baseI * (tint > 0.7  ? 0.95 : 0.85);
+    col[i*3+2] = baseI * (tint < 0.1  ? 0.6 : 1.0);
+    sz[i] = inMilkyWay ? 1.2 + Math.random() * 1.5 : 0.8 + Math.random() * 1.2;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+  geo.setAttribute('aSize',    new THREE.BufferAttribute(sz, 1));
+
+  // Custom shader so sizes vary per-star
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { uPixelRatio: { value: renderer.getPixelRatio() } },
+    vertexShader: `
+      attribute float aSize;
+      varying vec3 vColor;
+      uniform float uPixelRatio;
+      void main() {
+        vColor = color;
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = aSize * uPixelRatio;
+        gl_Position = projectionMatrix * mv;
+      }
+    `,
+    fragmentShader: `
+      varying vec3 vColor;
+      void main() {
+        vec2 c = gl_PointCoord - vec2(0.5);
+        float d = length(c);
+        float a = smoothstep(0.5, 0.0, d);
+        gl_FragColor = vec4(vColor, a);
+      }
+    `,
+    vertexColors: true,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+
+  grp.add(new THREE.Points(geo, mat));
+
+  // Hand-picked bright stars (sprites)
+  const brightTex = (() => {
+    const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+    const x = c.getContext('2d');
+    const g = x.createRadialGradient(32,32,0, 32,32,32);
+    g.addColorStop(0.0, 'rgba(255,255,255,1)');
+    g.addColorStop(0.2, 'rgba(255,255,255,0.7)');
+    g.addColorStop(0.5, 'rgba(180,210,255,0.15)');
+    g.addColorStop(1.0, 'rgba(0,0,0,0)');
+    x.fillStyle = g; x.fillRect(0,0,64,64);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  })();
+
+  for (let i = 0; i < 40; i++) {
+    const v = new THREE.Vector3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1).normalize();
+    v.multiplyScalar(2400 + Math.random()*400);
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: brightTex,
+      color: new THREE.Color().setHSL(0.55 + (Math.random()-0.5)*0.2, 0.4, 0.85),
+      blending: THREE.AdditiveBlending,
+      depthWrite: false, transparent: true
+    }));
+    s.position.copy(v);
+    const sz = 35 + Math.random() * 60;
+    s.scale.set(sz, sz, 1);
+    grp.add(s);
+  }
+  return grp;
+}
+scene.add(makeStars());
+
+/* =====================================================================
+   4.  SUN BILLBOARD + GLARE
+   ================================================================== */
+function makeSunSprite() {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(128,128,0, 128,128,128);
+  g.addColorStop(0.00, 'rgba(255,255,255,1)');
+  g.addColorStop(0.12, 'rgba(255,250,220,0.95)');
+  g.addColorStop(0.35, 'rgba(255,200,120,0.45)');
+  g.addColorStop(0.65, 'rgba(255,150,80,0.12)');
+  g.addColorStop(1.00, 'rgba(255,140,60,0)');
+  x.fillStyle = g; x.fillRect(0,0,256,256);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+  map: makeSunSprite(),
+  blending: THREE.AdditiveBlending,
+  depthWrite: false, transparent: true
+}));
+sunSprite.position.copy(SUN_POS).normalize().multiplyScalar(3000);
+sunSprite.scale.set(420, 420, 1);
+scene.add(sunSprite);
+
+/* =====================================================================
+   5.  EARTH — high-res procedural day, separate clouds, Fresnel atmo
+   ================================================================== */
+function makeEarthDayTexture() {
+  const c = document.createElement('canvas');
+  c.width = 4096; c.height = 2048;
+  const ctx = c.getContext('2d');
+
+  // Ocean gradient
+  const g = ctx.createLinearGradient(0, 0, 0, c.height);
+  g.addColorStop(0.00, '#02132c');
+  g.addColorStop(0.18, '#073070');
+  g.addColorStop(0.50, '#0e57b8');
+  g.addColorStop(0.82, '#073070');
+  g.addColorStop(1.00, '#02132c');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, c.width, c.height);
+
+  // Tropical lighter water
+  for (let i = 0; i < 60; i++) {
+    const y = (0.42 + Math.random()*0.16) * c.height;
+    const x = Math.random()*c.width;
+    const r = 60 + Math.random()*180;
+    const rg = ctx.createRadialGradient(x,y,0,x,y,r);
+    rg.addColorStop(0, 'rgba(80,180,210,0.25)');
+    rg.addColorStop(1, 'rgba(80,180,210,0)');
+    ctx.fillStyle = rg;
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  }
+
+  // Continent generator — noise blob stacks
+  function blob(cx, cy, R, baseFill, accent) {
+    const blobs = 12 + Math.floor(Math.random()*10);
+    for (let k = 0; k < blobs; k++) {
+      const angle = Math.random()*Math.PI*2;
+      const dist  = Math.random()*R*0.8;
+      const r     = R * (0.25 + Math.random()*0.55);
+      const x = cx + Math.cos(angle)*dist;
+      const y = cy + Math.sin(angle)*dist*0.7;
+      const rg = ctx.createRadialGradient(x,y,0,x,y,r);
+      rg.addColorStop(0.0, baseFill);
+      rg.addColorStop(0.55, accent);
+      rg.addColorStop(1.0, 'rgba(0,0,0,0)');
+      ctx.fillStyle = rg;
+      ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+    }
+  }
+  // Multiple continents/regions
+  blob(c.width*0.20, c.height*0.40, 350, '#3a7a3a', '#225a2a');
+  blob(c.width*0.30, c.height*0.55, 280, '#5a7a3a', '#3a5a2a');
+  blob(c.width*0.50, c.height*0.42, 320, '#3d7a3d', '#225a2a');
+  blob(c.width*0.60, c.height*0.62, 220, '#6b7a3a', '#4a5a25');
+  blob(c.width*0.78, c.height*0.45, 300, '#3a7a4a', '#225a35');
+  blob(c.width*0.85, c.height*0.62, 240, '#5a7a3a', '#3a5a2a');
+  blob(c.width*0.12, c.height*0.62, 180, '#4a6a3a', '#2a4a25');
+  blob(c.width*0.95, c.height*0.40, 200, '#3a7a3a', '#225a2a');
+
+  // Deserts (warm tones)
+  for (let i = 0; i < 18; i++) {
+    const x = Math.random() * c.width;
+    const y = (0.36 + Math.random()*0.28) * c.height;
+    const r = 40 + Math.random()*100;
+    const rg = ctx.createRadialGradient(x,y,0,x,y,r);
+    rg.addColorStop(0.0, '#d4b070');
+    rg.addColorStop(0.6, '#a07d3e');
+    rg.addColorStop(1.0, 'rgba(160,125,62,0)');
+    ctx.fillStyle = rg;
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  }
+  // Mountain ranges (darker)
+  for (let i = 0; i < 220; i++) {
+    const x = Math.random() * c.width;
+    const y = (0.32 + Math.random()*0.36) * c.height;
+    const r = 10 + Math.random()*22;
+    ctx.fillStyle = `rgba(${50 + Math.random()*40},${40 + Math.random()*30},${30 + Math.random()*20},${0.25 + Math.random()*0.25})`;
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  }
+
+  // Ice caps
+  const ice = ctx.createLinearGradient(0, 0, 0, c.height*0.07);
+  ice.addColorStop(0, 'rgba(255,255,255,0.95)');
+  ice.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = ice; ctx.fillRect(0,0,c.width,c.height*0.10);
+  const ice2 = ctx.createLinearGradient(0, c.height*0.93, 0, c.height);
+  ice2.addColorStop(0, 'rgba(255,255,255,0)');
+  ice2.addColorStop(1, 'rgba(255,255,255,0.95)');
+  ctx.fillStyle = ice2; ctx.fillRect(0,c.height*0.90,c.width,c.height*0.10);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return tex;
+}
+
+function makeEarthSpecularMap() {
+  const c = document.createElement('canvas'); c.width = 2048; c.height = 1024;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0,c.width,c.height);
+  // Roughly oceans = white (smooth/specular), land = black
+  ctx.fillStyle = '#aaaaaa'; ctx.fillRect(0,0,c.width,c.height); // base oceans
+  // Knock out continents (same approximate positions)
+  function landBlob(cx, cy, R) {
+    const blobs = 16;
+    for (let k = 0; k < blobs; k++) {
+      const a = Math.random()*Math.PI*2, d = Math.random()*R*0.8;
+      const r = R*(0.25 + Math.random()*0.55);
+      const x = cx + Math.cos(a)*d, y = cy + Math.sin(a)*d*0.7;
+      const rg = ctx.createRadialGradient(x,y,0,x,y,r);
+      rg.addColorStop(0, '#000');
+      rg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+    }
+  }
+  landBlob(c.width*0.20, c.height*0.40, 180);
+  landBlob(c.width*0.30, c.height*0.55, 140);
+  landBlob(c.width*0.50, c.height*0.42, 160);
+  landBlob(c.width*0.60, c.height*0.62, 110);
+  landBlob(c.width*0.78, c.height*0.45, 150);
+  landBlob(c.width*0.85, c.height*0.62, 120);
+  landBlob(c.width*0.12, c.height*0.62, 90);
+  landBlob(c.width*0.95, c.height*0.40, 100);
+  const t = new THREE.CanvasTexture(c);
+  return t;
+}
+
+function makeCloudsTexture() {
+  const c = document.createElement('canvas'); c.width = 2048; c.height = 1024;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = 'rgba(0,0,0,0)'; ctx.clearRect(0,0,c.width,c.height);
+  // Cloud bands (latitudinal-ish)
+  for (let band = 0; band < 8; band++) {
+    const y = (band/8) * c.height + Math.random()*30;
+    const density = (band % 2 === 0) ? 30 : 12;
+    for (let i = 0; i < density; i++) {
+      const x = Math.random()*c.width;
+      const r = 30 + Math.random()*120;
+      const yy = y + (Math.random()-0.5)*80;
+      const g = ctx.createRadialGradient(x, yy, 0, x, yy, r);
+      g.addColorStop(0.0, 'rgba(255,255,255,0.85)');
+      g.addColorStop(0.6, 'rgba(255,255,255,0.18)');
+      g.addColorStop(1.0, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(x, yy, r, 0, Math.PI*2); ctx.fill();
+    }
+  }
+  // Wispy structure
+  for (let i = 0; i < 500; i++) {
+    const x = Math.random()*c.width;
+    const y = Math.random()*c.height;
+    const r = 8 + Math.random()*30;
+    const g = ctx.createRadialGradient(x,y,0,x,y,r);
+    g.addColorStop(0, `rgba(255,255,255,${0.15 + Math.random()*0.4})`);
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+const earthGroup = new THREE.Group();
+earthGroup.position.set(0, -200, 0);
+scene.add(earthGroup);
+
+const EARTH_R = 80;
+const earth = new THREE.Mesh(
+  new THREE.SphereGeometry(EARTH_R, 128, 128),
+  new THREE.MeshStandardMaterial({
+    map: makeEarthDayTexture(),
+    roughnessMap: makeEarthSpecularMap(),
+    roughness: 0.85,
+    metalness: 0.0
+  })
+);
+earthGroup.add(earth);
+
+const clouds = new THREE.Mesh(
+  new THREE.SphereGeometry(EARTH_R * 1.012, 96, 96),
+  new THREE.MeshStandardMaterial({
+    map: makeCloudsTexture(),
+    transparent: true,
+    opacity: 0.8,
+    depthWrite: false,
+    roughness: 1.0
+  })
+);
+earthGroup.add(clouds);
+
+// Atmosphere with Fresnel shader
+const atmoShader = new THREE.ShaderMaterial({
+  uniforms: {
+    uSunDir: { value: SUN_POS.clone().normalize() },
+    uColorInner: { value: new THREE.Color(0x4488ff) },
+    uColorOuter: { value: new THREE.Color(0x86c0ff) }
+  },
+  vertexShader: `
+    varying vec3 vNormal;
+    varying vec3 vWorldPos;
+    void main() {
+      vec4 wp = modelMatrix * vec4(position, 1.0);
+      vWorldPos = wp.xyz;
+      vNormal = normalize(mat3(modelMatrix) * normal);
+      gl_Position = projectionMatrix * viewMatrix * wp;
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 uSunDir;
+    uniform vec3 uColorInner;
+    uniform vec3 uColorOuter;
+    varying vec3 vNormal;
+    varying vec3 vWorldPos;
+    void main() {
+      vec3 viewDir = normalize(cameraPosition - vWorldPos);
+      float fres = 1.0 - max(dot(viewDir, vNormal), 0.0);
+      fres = pow(fres, 2.0);
+      float sunDot = max(dot(vNormal, normalize(uSunDir)), 0.0);
+      vec3 col = mix(uColorInner, uColorOuter, fres);
+      float alpha = fres * (0.35 + 0.65 * sunDot);
+      gl_FragColor = vec4(col * (0.6 + 0.8*sunDot), alpha);
+    }
+  `,
+  transparent: true,
+  side: THREE.BackSide,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending
+});
+const atmosphere = new THREE.Mesh(
+  new THREE.SphereGeometry(EARTH_R * 1.06, 96, 96),
+  atmoShader
+);
+earthGroup.add(atmosphere);
+
+/* =====================================================================
+   6.  STARSHIP — procedural with mission markings
+   ================================================================== */
+const starshipGroup = new THREE.Group();
+scene.add(starshipGroup);
+
+const steelMat = new THREE.MeshStandardMaterial({
+  color: 0xe2e5ea, metalness: 0.96, roughness: 0.22
+});
+const accentMat = new THREE.MeshStandardMaterial({
+  color: 0x1c1f25, metalness: 0.8, roughness: 0.45
+});
+
+// Heat-shield hex tile texture
+function makeTileTexture() {
+  const c = document.createElement('canvas');
+  c.width = 1024; c.height = 1024;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#0e0e12'; ctx.fillRect(0,0,1024,1024);
+
+  // hex grid
+  const size = 22;
+  const w = size * Math.sqrt(3);
+  const h = size * 1.5;
+  for (let row = -1, y = 0; y < 1024 + size; row++, y += h) {
+    for (let col = -1, x = (row % 2 === 0 ? 0 : w/2); x < 1024 + size; col++, x += w) {
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = Math.PI/3 * i + Math.PI/6;
+        const px = x + Math.cos(a)*size*0.95;
+        const py = y + Math.sin(a)*size*0.95;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      const shade = 18 + Math.random()*16;
+      const tint  = Math.random() < 0.04 ? 50 : shade;
+      ctx.fillStyle = `rgb(${tint},${tint},${tint+4})`;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = THREE.RepeatWrapping; t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(3, 8);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+// Mission markings on the steel side
+function makeMarkingsTexture() {
+  const c = document.createElement('canvas');
+  c.width = 2048; c.height = 2048;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#e2e5ea'; ctx.fillRect(0,0,2048,2048);
+
+  // Brushed steel streaks
+  for (let i = 0; i < 1800; i++) {
+    const y = Math.random() * 2048;
+    ctx.strokeStyle = `rgba(${150 + Math.random()*60},${150 + Math.random()*60},${158 + Math.random()*60},${0.04 + Math.random()*0.08})`;
+    ctx.lineWidth = 0.4 + Math.random()*0.6;
+    ctx.beginPath();
+    ctx.moveTo(0, y); ctx.lineTo(2048, y + (Math.random()-0.5)*4);
+    ctx.stroke();
+  }
+
+  // SpaceX wordmark
+  ctx.fillStyle = '#0c0e12';
+  ctx.font = 'bold 110px "Inter", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('SpaceX', 240, 540);
+
+  // USA flag
+  function drawFlag(x, y, w, h) {
+    const stripeH = h / 13;
+    for (let i = 0; i < 13; i++) {
+      ctx.fillStyle = (i % 2 === 0) ? '#b22234' : '#ffffff';
+      ctx.fillRect(x, y + i*stripeH, w, stripeH);
+    }
+    ctx.fillStyle = '#3c3b6e';
+    ctx.fillRect(x, y, w * 0.4, stripeH * 7);
+    ctx.fillStyle = '#fff';
+    for (let r = 0; r < 6; r++) {
+      for (let cc = 0; cc < 6; cc++) {
+        if ((r+cc) % 2 === 0) {
+          ctx.beginPath();
+          ctx.arc(x + 10 + cc*(w*0.4/6 - 5), y + 8 + r*(stripeH*7/7 - 2), 2.5, 0, Math.PI*2);
+          ctx.fill();
+        }
+      }
+    }
+  }
+  drawFlag(240, 620, 180, 110);
+
+  // Mission designation
+  ctx.fillStyle = '#0c0e12';
+  ctx.font = 'bold 64px "JetBrains Mono", monospace';
+  ctx.fillText('ARES-1', 460, 700);
+  ctx.font = '500 28px "JetBrains Mono", monospace';
+  ctx.fillStyle = '#5b6e8a';
+  ctx.fillText('ORBITAL SERVICING · SN-49', 460, 738);
+
+  // Serial number block
+  ctx.strokeStyle = '#0c0e12';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(240, 900, 280, 76);
+  ctx.font = '500 18px "JetBrains Mono", monospace';
+  ctx.fillStyle = '#0c0e12';
+  ctx.fillText('S/N  STS-049-AR', 260, 932);
+  ctx.fillText('MFR  HAWTHORNE CA', 260, 958);
+
+  // Caution decals
+  ctx.font = 'bold 22px "Inter", sans-serif';
+  ctx.fillStyle = '#b22234';
+  ctx.fillText('⚠  CAUTION: HIGH PRESSURE LINES', 240, 1100);
+  ctx.fillText('⚠  NO STEP', 240, 1140);
+
+  // Hatch outline
+  ctx.strokeStyle = '#0c0e12';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.ellipse(1500, 1024, 130, 200, 0, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.font = 'bold 18px "JetBrains Mono", monospace';
+  ctx.fillStyle = '#0c0e12';
+  ctx.textAlign = 'center';
+  ctx.fillText('EVA HATCH 1', 1500, 1248);
+
+  // Big "STARSHIP" near top
+  ctx.textAlign = 'left';
+  ctx.font = 'bold 180px "Inter", sans-serif';
+  ctx.fillStyle = '#0c0e12';
+  ctx.fillText('STARSHIP', 240, 280);
+
+  // Long horizontal seam lines
+  ctx.strokeStyle = 'rgba(60,70,90,0.5)';
+  ctx.lineWidth = 1;
+  for (let y = 0; y < 2048; y += 96) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(2048, y); ctx.stroke();
+  }
+
+  // Bolt heads along seams
+  ctx.fillStyle = '#7d8694';
+  for (let y = 0; y < 2048; y += 96) {
+    for (let x = 16; x < 2048; x += 64) {
+      ctx.beginPath(); ctx.arc(x, y, 1.4, 0, Math.PI*2); ctx.fill();
+    }
+  }
+
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = THREE.ClampToEdgeWrapping;
+  t.wrapT = THREE.ClampToEdgeWrapping;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return t;
+}
+
+const steelDecalsMat = new THREE.MeshStandardMaterial({
+  map: makeMarkingsTexture(),
+  metalness: 0.85,
+  roughness: 0.28
+});
+
+const heatShieldMat = new THREE.MeshStandardMaterial({
+  color: 0xffffff,
+  metalness: 0.4,
+  roughness: 0.72,
+  map: makeTileTexture()
+});
+
+const BODY_RADIUS = 4.5;
+const BODY_HEIGHT = 50;
+const SEG = 96;
+
+// Steel half (front) with mission markings
+const steelHalf = new THREE.Mesh(
+  new THREE.CylinderGeometry(BODY_RADIUS, BODY_RADIUS, BODY_HEIGHT, SEG, 1, false, 0, Math.PI),
+  steelDecalsMat
+);
+starshipGroup.add(steelHalf);
+
+// Heat-shield half (back) with hex tiles
+const heatHalf = new THREE.Mesh(
+  new THREE.CylinderGeometry(BODY_RADIUS, BODY_RADIUS, BODY_HEIGHT, SEG, 1, false, Math.PI, Math.PI),
+  heatShieldMat
+);
+starshipGroup.add(heatHalf);
+
+// Header tank dome bulge at top (subtle)
+const headerDome = new THREE.Mesh(
+  new THREE.SphereGeometry(BODY_RADIUS - 0.4, 48, 24, 0, Math.PI*2, 0, Math.PI/2),
+  steelMat
+);
+headerDome.position.y = BODY_HEIGHT/2 + 0.2;
+starshipGroup.add(headerDome);
+
+// Nosecone (split)
+const NOSE_H = 14;
+const noseSteel = new THREE.Mesh(
+  new THREE.CylinderGeometry(BODY_RADIUS, 0, NOSE_H, SEG, 1, true, 0, Math.PI),
+  steelMat
+);
+noseSteel.position.y = BODY_HEIGHT/2 + NOSE_H/2;
+starshipGroup.add(noseSteel);
+
+const noseHeat = new THREE.Mesh(
+  new THREE.CylinderGeometry(BODY_RADIUS, 0, NOSE_H, SEG, 1, true, Math.PI, Math.PI),
+  heatShieldMat
+);
+noseHeat.position.y = BODY_HEIGHT/2 + NOSE_H/2;
+starshipGroup.add(noseHeat);
+
+// Nose tip cap (small sphere)
+const noseTip = new THREE.Mesh(
+  new THREE.SphereGeometry(0.45, 18, 18),
+  accentMat
+);
+noseTip.position.y = BODY_HEIGHT/2 + NOSE_H;
+starshipGroup.add(noseTip);
+
+// Reinforcement rings (subtle)
+const ringSubtle = new THREE.MeshStandardMaterial({ color: 0xa6acb6, metalness: 0.9, roughness: 0.45 });
+for (let y = -BODY_HEIGHT/2 + 4; y <= BODY_HEIGHT/2 - 4; y += 5) {
+  const r = new THREE.Mesh(
+    new THREE.TorusGeometry(BODY_RADIUS + 0.025, 0.05, 6, SEG),
+    ringSubtle
+  );
+  r.rotation.x = Math.PI/2; r.position.y = y;
+  starshipGroup.add(r);
+}
+
+// Flaps — forward (upper) and aft (lower), proper aero shape
+function makeFlap(angle, upper) {
+  const grp = new THREE.Group();
+  const flap = new THREE.Mesh(
+    new THREE.BoxGeometry(0.55, 7.5, 4.2),
+    heatShieldMat
+  );
+  flap.position.set(0.3, 0, 0);
+  grp.add(flap);
+
+  // hinge cover
+  const hinge = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.35, 0.35, 4.2, 16),
+    accentMat
+  );
+  hinge.rotation.x = Math.PI/2;
+  grp.add(hinge);
+
+  // mounted on body
+  const y = upper ? BODY_HEIGHT/2 - 6 : -BODY_HEIGHT/2 + 6;
+  grp.position.set(Math.cos(angle) * (BODY_RADIUS + 1.5), y, Math.sin(angle) * (BODY_RADIUS + 1.5));
+  grp.rotation.y = -angle + Math.PI/2;
+  grp.rotation.z = upper ? 0.25 : -0.25;
+  return grp;
+}
+starshipGroup.add(makeFlap(Math.PI*0.32, true));
+starshipGroup.add(makeFlap(Math.PI*0.68, true));
+starshipGroup.add(makeFlap(Math.PI*1.32, false));
+starshipGroup.add(makeFlap(Math.PI*1.68, false));
+
+// RCS thruster pods
+function makeRCSPod(angle, y) {
+  const grp = new THREE.Group();
+  const housing = new THREE.Mesh(
+    new THREE.BoxGeometry(1.6, 0.8, 1.4),
+    accentMat
+  );
+  grp.add(housing);
+  // four small nozzles
+  for (let i = -1; i <= 1; i += 2) for (let j = -1; j <= 1; j += 2) {
+    const n = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.10, 0.16, 0.25, 10),
+      new THREE.MeshStandardMaterial({ color: 0x3a3d44, metalness: 0.85, roughness: 0.4 })
+    );
+    n.rotation.x = Math.PI/2;
+    n.position.set(i*0.5, j*0.25, 0.75);
+    grp.add(n);
+  }
+  grp.position.set(Math.cos(angle)*(BODY_RADIUS + 0.6), y, Math.sin(angle)*(BODY_RADIUS + 0.6));
+  grp.rotation.y = -angle + Math.PI/2;
+  return grp;
+}
+starshipGroup.add(makeRCSPod(Math.PI*0.10, BODY_HEIGHT*0.35));
+starshipGroup.add(makeRCSPod(Math.PI*0.90, BODY_HEIGHT*0.35));
+starshipGroup.add(makeRCSPod(Math.PI*0.10, -BODY_HEIGHT*0.40));
+starshipGroup.add(makeRCSPod(Math.PI*0.90, -BODY_HEIGHT*0.40));
+
+// Raptor engine bells
+function makeRaptor(x, z, glowOn) {
+  const grp = new THREE.Group();
+  const bell = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.55, 1.1, 1.8, 22, 1, true),
+    new THREE.MeshStandardMaterial({
+      color: 0x4a4d54, metalness: 0.95, roughness: 0.35, side: THREE.DoubleSide
+    })
+  );
+  bell.position.y = -0.9;
+  grp.add(bell);
+  const cap = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.55, 0.55, 0.4, 22),
+    new THREE.MeshStandardMaterial({ color: 0x2a2c32, metalness: 0.9, roughness: 0.4 })
+  );
+  cap.position.y = -0.05;
+  grp.add(cap);
+
+  if (glowOn) {
+    const inner = new THREE.Mesh(
+      new THREE.CircleGeometry(0.95, 22),
+      new THREE.MeshBasicMaterial({ color: 0xff5a26, transparent: true, opacity: 0.85 })
+    );
+    inner.rotation.x = Math.PI/2;
+    inner.position.y = -1.78;
+    grp.add(inner);
+  }
+
+  grp.position.set(x, -BODY_HEIGHT/2, z);
+  return grp;
+}
+// 3 sea-level Raptors (inner) + 3 vacuum (outer ring)
+for (let i = 0; i < 3; i++) {
+  const a = (i/3)*Math.PI*2;
+  starshipGroup.add(makeRaptor(Math.cos(a)*1.5, Math.sin(a)*1.5, false));
+}
+for (let i = 0; i < 6; i++) {
+  const a = (i/6)*Math.PI*2;
+  starshipGroup.add(makeRaptor(Math.cos(a)*3.1, Math.sin(a)*3.1, false));
+}
+
+/* =====================================================================
+   7.  SLEWING RING (Corona Dentada) — high-detail
+   ================================================================== */
+const slewingY = BODY_HEIGHT * 0.18;
+const slewingRing = new THREE.Group();
+slewingRing.position.y = slewingY;
+starshipGroup.add(slewingRing);
+
+// Main ring body
+const ringBody = new THREE.Mesh(
+  new THREE.TorusGeometry(BODY_RADIUS + 0.45, 0.55, 18, 128),
+  new THREE.MeshStandardMaterial({ color: 0x2c3036, metalness: 0.95, roughness: 0.3 })
+);
+ringBody.rotation.x = Math.PI/2;
+slewingRing.add(ringBody);
+
+// External teeth
+const teethCount = 84;
+const toothMat = new THREE.MeshStandardMaterial({ color: 0x15171c, metalness: 0.9, roughness: 0.4 });
+for (let i = 0; i < teethCount; i++) {
+  const a = (i/teethCount) * Math.PI*2;
+  const t = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.42, 0.32), toothMat);
+  t.position.set(Math.cos(a)*(BODY_RADIUS + 1.02), 0, Math.sin(a)*(BODY_RADIUS + 1.02));
+  t.rotation.y = -a;
+  slewingRing.add(t);
+}
+
+// Bolt heads upper/lower
+const boltMat = new THREE.MeshStandardMaterial({ color: 0x6a7280, metalness: 0.85, roughness: 0.45 });
+for (let i = 0; i < 48; i++) {
+  const a = (i/48) * Math.PI*2;
+  for (const yy of [0.65, -0.65]) {
+    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.10, 0.08, 8), boltMat);
+    b.position.set(Math.cos(a)*(BODY_RADIUS + 0.45), yy, Math.sin(a)*(BODY_RADIUS + 0.45));
+    slewingRing.add(b);
+  }
+}
+
+// Status indicator LEDs around the ring (alternating green)
+const ledOnMat  = new THREE.MeshStandardMaterial({ color: 0x2ee27a, emissive: 0x2ee27a, emissiveIntensity: 1.6, metalness: 0.3, roughness: 0.4 });
+const ledOffMat = new THREE.MeshStandardMaterial({ color: 0x1a3a26, emissive: 0x000000, metalness: 0.3, roughness: 0.5 });
+const ringLEDs = [];
+for (let i = 0; i < 12; i++) {
+  const a = (i/12) * Math.PI*2;
+  const led = new THREE.Mesh(
+    new THREE.SphereGeometry(0.10, 10, 10),
+    i % 2 === 0 ? ledOnMat : ledOffMat
+  );
+  led.position.set(Math.cos(a)*(BODY_RADIUS + 0.45), 0.78, Math.sin(a)*(BODY_RADIUS + 0.45));
+  slewingRing.add(led);
+  ringLEDs.push(led);
+}
+
+/* =====================================================================
+   8.  ARES ROBOTIC ARM — high-detail 6-DOF
+   ================================================================== */
+const SEG_LEN = 4.6;
+const SEG_R   = 0.55;
+const SEG_COUNT = 6;
+
+const armWhiteMat = new THREE.MeshStandardMaterial({
+  color: 0xf5f7fa, metalness: 0.45, roughness: 0.42
+});
+const armBlackMat = new THREE.MeshStandardMaterial({
+  color: 0x111318, metalness: 0.8, roughness: 0.4
+});
+const bellowsMat = new THREE.MeshStandardMaterial({
+  color: 0x16181d, metalness: 0.6, roughness: 0.75
+});
+const cableMat = new THREE.MeshStandardMaterial({
+  color: 0x202428, metalness: 0.55, roughness: 0.7
+});
+
+// Mount platform on slewing ring
+const armMount = new THREE.Group();
+armMount.position.set(BODY_RADIUS + 1.05, 0, 0);
+slewingRing.add(armMount);
+
+const mountPlate = new THREE.Mesh(
+  new THREE.BoxGeometry(1.2, 1.6, 1.8),
+  new THREE.MeshStandardMaterial({ color: 0xdcdfe4, metalness: 0.75, roughness: 0.35 })
+);
+mountPlate.position.x = 0.6;
+armMount.add(mountPlate);
+
+// Mount accents
+const mountBolts = new THREE.MeshStandardMaterial({ color: 0x4a4f57, metalness: 0.9, roughness: 0.4 });
+for (let i = 0; i < 8; i++) {
+  const a = (i/8) * Math.PI*2;
+  const b = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.1, 8), mountBolts);
+  b.position.set(0.1, Math.cos(a)*0.65, Math.sin(a)*0.75);
+  b.rotation.z = Math.PI/2;
+  armMount.add(b);
+}
+
+// Decal "ARES" on mount
+const decalCanvas = (() => {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+  const x = c.getContext('2d');
+  x.fillStyle = '#dcdfe4'; x.fillRect(0,0,256,128);
+  x.fillStyle = '#0c0e12'; x.font = 'bold 64px "JetBrains Mono", monospace';
+  x.textAlign = 'center'; x.fillText('ARES', 128, 78);
+  x.font = 'bold 18px "JetBrains Mono", monospace';
+  x.fillText('NODE-A · SN-49', 128, 108);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+})();
+const decal = new THREE.Mesh(
+  new THREE.PlaneGeometry(1.4, 0.7),
+  new THREE.MeshBasicMaterial({ map: decalCanvas })
+);
+decal.position.set(0.91, 0, 0);
+decal.rotation.y = Math.PI/2;
+armMount.add(decal);
+
+// Forward-Kinematics chain
+const joints = [];
+const segmentMeshes = [];
+let parent = armMount;
+
+for (let i = 0; i < SEG_COUNT; i++) {
+  const joint = new THREE.Group();
+  const taper = 1.0 - i * 0.07; // distal segments slightly thinner
+
+  // Bellows at the joint (small ribbed cylinder)
+  const bellows = new THREE.Mesh(
+    new THREE.CylinderGeometry(SEG_R * 1.25 * taper, SEG_R * 1.25 * taper, 0.55, 22),
+    bellowsMat
+  );
+  bellows.rotation.z = Math.PI/2;
+  bellows.position.x = -0.05;
+  joint.add(bellows);
+
+  // Bellows ribs
+  for (let r = 0; r < 6; r++) {
+    const rib = new THREE.Mesh(
+      new THREE.TorusGeometry(SEG_R * 1.27 * taper, 0.04, 5, 22),
+      armBlackMat
+    );
+    rib.rotation.y = Math.PI/2;
+    rib.position.x = -0.28 + r * 0.10;
+    joint.add(rib);
+  }
+
+  // Joint motor housing (sphere with cap)
+  const motor = new THREE.Mesh(
+    new THREE.SphereGeometry(SEG_R * 1.55 * taper, 28, 18),
+    armBlackMat
+  );
+  motor.position.x = 0.45;
+  joint.add(motor);
+
+  // Motor side cap (mechanical disc)
+  const cap = new THREE.Mesh(
+    new THREE.CylinderGeometry(SEG_R*1.4*taper, SEG_R*1.4*taper, 0.18, 24),
+    new THREE.MeshStandardMaterial({ color: 0xb6bcc4, metalness: 0.9, roughness: 0.4 })
+  );
+  cap.position.set(0.45, SEG_R*1.55*taper, 0);
+  joint.add(cap);
+
+  // Segment cylinder (tapered)
+  const SEG_START_X = 0.85;
+  const segLen = SEG_LEN - 0.6;
+  const seg = new THREE.Mesh(
+    new THREE.CylinderGeometry(SEG_R * taper, SEG_R * (taper - 0.05), segLen, 28),
+    armWhiteMat
+  );
+  seg.rotation.z = Math.PI/2;
+  seg.position.x = SEG_START_X + segLen/2;
+  joint.add(seg);
+  segmentMeshes.push(seg);
+
+  // Cable bundle running along segment (tube)
+  const cablePts = [];
+  for (let t = 0; t <= 10; t++) {
+    const u = t / 10;
+    const x = SEG_START_X + u * segLen;
+    const y = -SEG_R * taper * 0.9;
+    const z = (taper > 0) ? Math.sin(u * Math.PI * 2) * 0.05 : 0;
+    cablePts.push(new THREE.Vector3(x, y, z));
+  }
+  const cableCurve = new THREE.CatmullRomCurve3(cablePts);
+  const cable = new THREE.Mesh(
+    new THREE.TubeGeometry(cableCurve, 24, 0.09, 8, false),
+    cableMat
+  );
+  joint.add(cable);
+
+  // Mid-segment sensor block
+  const sensor = new THREE.Mesh(
+    new THREE.BoxGeometry(0.5, 0.32, 0.25),
+    armBlackMat
+  );
+  sensor.position.set(SEG_START_X + segLen * 0.55, SEG_R * taper, 0);
+  joint.add(sensor);
+
+  // Sensor LED (emissive)
+  const sled = new THREE.Mesh(
+    new THREE.SphereGeometry(0.05, 8, 8),
+    new THREE.MeshStandardMaterial({ color: 0x4aa8ff, emissive: 0x4aa8ff, emissiveIntensity: 2.0 })
+  );
+  sled.position.set(SEG_START_X + segLen * 0.55, SEG_R * taper + 0.18, 0);
+  joint.add(sled);
+
+  // Distal cuff
+  const cuff = new THREE.Mesh(
+    new THREE.CylinderGeometry(SEG_R * (taper-0.05) * 1.1, SEG_R * (taper-0.05) * 1.1, 0.25, 28),
+    new THREE.MeshStandardMaterial({ color: 0x6a7280, metalness: 0.95, roughness: 0.3 })
+  );
+  cuff.rotation.z = Math.PI/2;
+  cuff.position.x = SEG_START_X + segLen - 0.15;
+  joint.add(cuff);
+
+  // segment number label (procedural)
+  const labelTex = (() => {
+    const c = document.createElement('canvas'); c.width = 128; c.height = 64;
+    const x = c.getContext('2d');
+    x.fillStyle = 'rgba(0,0,0,0)';
+    x.clearRect(0,0,128,64);
+    x.fillStyle = '#0c0e12';
+    x.font = 'bold 38px "JetBrains Mono", monospace';
+    x.textAlign = 'center'; x.fillText('S' + (i+1), 64, 44);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  })();
+  const label = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.5, 0.25),
+    new THREE.MeshBasicMaterial({ map: labelTex, transparent: true })
+  );
+  label.position.set(SEG_START_X + 0.6, SEG_R * taper * 0.95, 0);
+  label.rotation.x = -Math.PI/2;
+  // Better: place label on top facing up
+  label.position.set(SEG_START_X + 0.6, SEG_R * taper + 0.001, 0);
+  label.rotation.x = -Math.PI/2;
+  joint.add(label);
+
+  // Position the joint at the end of the previous segment
+  joint.position.x = (i === 0) ? 1.25 : SEG_LEN;
+
+  parent.add(joint);
+  joints.push(joint);
+  parent = joint;
+}
+
+/* End effector: wrist + optical arm + tri-finger gripper */
+const endEffector = new THREE.Group();
+endEffector.position.x = SEG_LEN;
+parent.add(endEffector);
+
+// Wrist housing
+const wrist = new THREE.Mesh(
+  new THREE.CylinderGeometry(SEG_R*1.35, SEG_R*1.35, 1.0, 26),
+  armBlackMat
+);
+wrist.rotation.z = Math.PI/2;
+endEffector.add(wrist);
+
+// Tool plate
+const toolPlate = new THREE.Mesh(
+  new THREE.CylinderGeometry(SEG_R*1.45, SEG_R*1.45, 0.18, 26),
+  new THREE.MeshStandardMaterial({ color: 0xb6bcc4, metalness: 0.9, roughness: 0.32 })
+);
+toolPlate.rotation.z = Math.PI/2;
+toolPlate.position.x = 0.55;
+endEffector.add(toolPlate);
+
+// Optical camera arm
+const opticalArm = new THREE.Mesh(
+  new THREE.BoxGeometry(1.3, 0.42, 0.42),
+  armWhiteMat
+);
+opticalArm.position.set(1.0, 0.78, 0);
+endEffector.add(opticalArm);
+
+const opticalHousing = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.32, 0.32, 0.5, 22),
+  armBlackMat
+);
+opticalHousing.rotation.z = Math.PI/2;
+opticalHousing.position.set(1.65, 0.78, 0);
+endEffector.add(opticalHousing);
+
+const lens = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.24, 0.24, 0.16, 22),
+  new THREE.MeshStandardMaterial({
+    color: 0x05080f, metalness: 0.5, roughness: 0.18,
+    emissive: 0x0a3a78, emissiveIntensity: 0.8
+  })
+);
+lens.rotation.z = Math.PI/2;
+lens.position.set(1.95, 0.78, 0);
+endEffector.add(lens);
+
+// Camera red record LED
+const camLED = new THREE.Mesh(
+  new THREE.SphereGeometry(0.06, 10, 10),
+  new THREE.MeshStandardMaterial({ color: 0xff3344, emissive: 0xff3344, emissiveIntensity: 3.0 })
+);
+camLED.position.set(1.65, 1.10, 0);
+endEffector.add(camLED);
+
+// Spot light from end-effector camera (subtle illumination)
+const eeLight = new THREE.SpotLight(0xa8d4ff, 1.2, 35, Math.PI/5, 0.4, 1.0);
+eeLight.position.set(2.0, 0.78, 0);
+endEffector.add(eeLight);
+const eeTarget = new THREE.Object3D();
+eeTarget.position.set(8.0, 0.78, 0);
+endEffector.add(eeTarget);
+eeLight.target = eeTarget;
+
+// Tri-finger gripper
+function makeFinger(angleDeg) {
+  const grp = new THREE.Group();
+  // Base segment
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.22, 0.22), armWhiteMat);
+  base.position.x = 0.45;
+  grp.add(base);
+  // Knuckle
+  const knuckle = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 10), armBlackMat);
+  knuckle.position.x = 0.9;
+  grp.add(knuckle);
+  // Tip segment angled inward
+  const tip = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.18, 0.18), armWhiteMat);
+  tip.position.x = 1.18;
+  tip.rotation.z = -0.45;
+  tip.position.y = -0.10;
+  grp.add(tip);
+  // Pad
+  const pad = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.12, 0.22), armBlackMat);
+  pad.position.set(1.45, -0.27, 0);
+  grp.add(pad);
+  // Position on tool plate
+  grp.position.set(0.7, 0, 0);
+  grp.rotation.x = THREE.MathUtils.degToRad(angleDeg);
+  return grp;
+}
+const fingers = [makeFinger(0), makeFinger(120), makeFinger(240)];
+fingers.forEach(f => endEffector.add(f));
+
+/* =====================================================================
+   9.  POSES & FORWARD KINEMATICS
+   ================================================================== */
+// Apply: each joint rotates around an axis chosen for natural 6-DOF
+function applyPose(p) {
+  slewingRing.rotation.y = THREE.MathUtils.degToRad(p.ring);
+  joints[0].rotation.z = THREE.MathUtils.degToRad(p.j1); // shoulder pitch
+  joints[1].rotation.z = THREE.MathUtils.degToRad(p.j2); // elbow pitch
+  joints[2].rotation.z = THREE.MathUtils.degToRad(p.j3); // wrist 1 pitch
+  joints[3].rotation.y = THREE.MathUtils.degToRad(p.j4); // yaw
+  joints[4].rotation.z = THREE.MathUtils.degToRad(p.j5); // wrist 2 pitch
+  joints[5].rotation.x = THREE.MathUtils.degToRad(p.j6); // tool roll
+}
+
+const PRESETS = {
+  stow:            { ring: 0,   j1: -75, j2: 135, j3: -85, j4: 0,   j5: -30, j6: 0,   label: 'STOW · PLEGADO SEGURO' },
+  deploy:          { ring: 0,   j1: -25, j2: 50,  j3: -30, j4: 0,   j5: -10, j6: 0,   label: 'DEPLOY · DESPLEGADO' },
+  inspect_bay:     { ring: 45,  j1: -10, j2: 35,  j3: 30,  j4: 30,  j5: -20, j6: 90,  label: 'INSPECT BAY · BAHÍA DE CARGA' },
+  inspect_shield:  { ring: 180, j1: -55, j2: 90,  j3: -45, j4: -25, j5: 30,  j6: 180, label: 'INSPECT HEAT SHIELD · ESCUDO' },
+  dock:            { ring: 90,  j1: 5,   j2: 10,  j3: -8,  j4: 0,   j5: 0,   j6: 0,   label: 'DOCK PORT · PUERTO DE ATRAQUE' },
+  emergency:       { ring: 0,   j1: -85, j2: 150, j3: -95, j4: 0,   j5: -40, j6: 0,   label: 'EMERG RETRACT · REPLIEGUE EMERG.' }
+};
+
+const state = { ...PRESETS.stow };
+delete state.label;
+applyPose(state);
+
+/* =====================================================================
+   10. LIL-GUI CONTROL
+   ================================================================== */
+const gui = new GUI({ title: 'ARES · CONTROL CONSOLE' });
+
+const fRing = gui.addFolder('Slewing Ring · Corona Dentada');
+fRing.add(state, 'ring', 0, 360, 0.5).name('Rotación °').onChange(() => applyPose(state));
+
+const fArm = gui.addFolder('Manipulator · 6 DOF');
+fArm.add(state, 'j1', -180, 180, 0.5).name('J1 Shoulder Pitch').onChange(() => applyPose(state));
+fArm.add(state, 'j2', -180, 180, 0.5).name('J2 Elbow Pitch').onChange(() => applyPose(state));
+fArm.add(state, 'j3', -180, 180, 0.5).name('J3 Wrist 1 Pitch').onChange(() => applyPose(state));
+fArm.add(state, 'j4', -180, 180, 0.5).name('J4 Yaw').onChange(() => applyPose(state));
+fArm.add(state, 'j5', -180, 180, 0.5).name('J5 Wrist 2 Pitch').onChange(() => applyPose(state));
+fArm.add(state, 'j6', -360, 360, 1.0).name('J6 Tool Roll').onChange(() => applyPose(state));
+
+const fEnv = gui.addFolder('Environment');
+const envOpts = {
+  bloom: 0.55,
+  exposure: 1.0,
+  earthSpin: true,
+  shipDrift: true,
+  showGrid: true,
+  showScanlines: true
+};
+fEnv.add(envOpts, 'bloom', 0, 1.5, 0.05).name('Bloom intensity').onChange(v => bloom.strength = v);
+fEnv.add(envOpts, 'exposure', 0.3, 2.0, 0.05).name('Exposure').onChange(v => renderer.toneMappingExposure = v);
+fEnv.add(envOpts, 'earthSpin').name('Earth rotation');
+fEnv.add(envOpts, 'shipDrift').name('Orbital drift');
+fEnv.add(envOpts, 'showGrid').name('HUD grid').onChange(v => document.getElementById('grid-overlay').style.display = v ? '' : 'none');
+fEnv.add(envOpts, 'showScanlines').name('Scanlines').onChange(v => document.getElementById('scanlines').style.display = v ? '' : 'none');
+
+/* =====================================================================
+   11. POSE INTERPOLATION + PRESETS + COMMAND LOG
+   ================================================================== */
+let poseAnim = null;
+function animatePoseTo(target, dur = 1.6) {
+  poseAnim = { from: { ...state }, target, t0: performance.now(), dur };
+}
+function updatePoseAnim(now) {
+  if (!poseAnim) return;
+  const t = Math.min(1, (now - poseAnim.t0) / (poseAnim.dur * 1000));
+  const e = t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
+  for (const k of Object.keys(poseAnim.target)) {
+    if (k === 'label') continue;
+    state[k] = poseAnim.from[k] + (poseAnim.target[k] - poseAnim.from[k]) * e;
+  }
+  applyPose(state);
+  gui.controllersRecursive().forEach(c => c.updateDisplay());
+  if (t >= 1) poseAnim = null;
+}
+
+// Command log
+const logList = document.getElementById('log-list');
+function logEvt(msg, kind = '') {
+  const line = document.createElement('div');
+  line.className = 'line ' + kind;
+  const now = new Date();
+  const t = now.toTimeString().substring(0,8);
+  line.innerHTML = `<span class="t">${t}Z</span>${msg}`;
+  logList.prepend(line);
+  while (logList.children.length > 12) logList.removeChild(logList.lastChild);
+}
+
+const aresMode = document.getElementById('ares-mode');
+function setMode(mode, color) {
+  aresMode.textContent = mode;
+  aresMode.className = 'val ' + (color || 'amber');
+}
+
+document.querySelectorAll('#panel-presets .preset').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const p = btn.dataset.preset;
+    const target = PRESETS[p];
+    if (!target) return;
+    document.querySelectorAll('.preset').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    animatePoseTo(target, p === 'emergency' ? 0.9 : 2.0);
+    logEvt(`> CMD EXEC :: ${target.label}`, p === 'emergency' ? 'warn' : 'ok');
+    setMode(p === 'stow' ? 'STANDBY' : 'ACTIVE', p === 'stow' ? 'amber' : 'green');
+  });
+});
+
+// Initial log
+logEvt('> ARES-1 BOOT SEQUENCE COMPLETE', 'ok');
+logEvt('> SLEWING RING NOMINAL · 0.00°', 'ok');
+logEvt('> 6 SERVO MOTORS ONLINE · TORQUE NOMINAL', 'ok');
+logEvt('> END-EFFECTOR CAMERA STREAMING 4K/60', 'ok');
+logEvt('> CAPCOM HANDOVER COMPLETE · READY FOR OPS');
+
+/* =====================================================================
+   12. PiP CAMERA (end-effector view) + DOM HUD UPDATES
+   ================================================================== */
+// Position PiP camera at the lens with forward-look
+function updatePipCamera() {
+  const lensWorld = new THREE.Vector3();
+  lens.getWorldPosition(lensWorld);
+  pipCamera.position.copy(lensWorld);
+
+  // forward is the local +X of endEffector
+  const fwd = new THREE.Vector3(1, 0, 0);
+  endEffector.localToWorld(fwd);
+  pipCamera.lookAt(fwd);
+
+  // Use lens up = world up-ish (Y of slewingRing)
+  pipCamera.up.set(0, 1, 0);
+}
+
+// Joint diagnostic bars
+const jointBars = {};
+document.querySelectorAll('#panel-joints .jrow').forEach(r => {
+  jointBars[r.dataset.j] = {
+    fill: r.querySelector('.fill'),
+    val:  r.querySelector('.val')
+  };
+});
+
+function updateJointDiag() {
+  function setBar(key, value, min, max) {
+    const b = jointBars[key];
+    if (!b) return;
+    const pct = ((value - min) / (max - min)) * 100;
+    b.fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+    b.val.textContent = value.toFixed(0) + '°';
+  }
+  setBar('ring', state.ring, 0, 360);
+  setBar('j1', state.j1, -180, 180);
+  setBar('j2', state.j2, -180, 180);
+  setBar('j3', state.j3, -180, 180);
+  setBar('j4', state.j4, -180, 180);
+  setBar('j5', state.j5, -180, 180);
+  setBar('j6', state.j6, -360, 360);
+}
+
+// MET timer
+const metStart = performance.now();
+function fmt2(n) { return n.toString().padStart(2, '0'); }
+function updateMET() {
+  const elapsed = (performance.now() - metStart) / 1000;
+  const d = Math.floor(elapsed / 86400);
+  const h = Math.floor((elapsed % 86400) / 3600);
+  const m = Math.floor((elapsed % 3600) / 60);
+  const s = Math.floor(elapsed % 60);
+  document.getElementById('met').textContent =
+    `T+ ${fmt2(d)}:${fmt2(h)}:${fmt2(m)}:${fmt2(s)}`;
+}
+
+// UTC / ephemeris
+function updateClock() {
+  const now = new Date();
+  const utc = now.toISOString().substring(11, 19);
+  document.getElementById('pip-utc').textContent = 'UTC ' + utc;
+
+  // Fake but plausible orbital tick
+  const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+  const yyyy = now.getFullYear();
+  document.getElementById('t-eph').textContent =
+    `${yyyy}-${dayOfYear.toString().padStart(3,'0')}/${utc.substring(0,5)}Z`;
+}
+
+// Altitude/velocity gentle oscillation for realism
+function updateOrbital() {
+  const t = performance.now() / 1000;
+  const alt = 412.6 + Math.sin(t * 0.04) * 3.2;
+  const vel = 7.668 + Math.cos(t * 0.04) * 0.018;
+  document.getElementById('t-alt').textContent = alt.toFixed(1) + ' km';
+  document.getElementById('t-vel').textContent = vel.toFixed(3) + ' km/s';
+}
+
+/* =====================================================================
+   13. RENDER LOOP — composer (main) + PiP overlay
+   ================================================================== */
+const pipDom = document.getElementById('pip-wrap');
+const pipRect = () => pipDom.getBoundingClientRect();
+
+let last = performance.now();
+let ledPhase = 0;
+
+function render(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+
+  updatePoseAnim(now);
+  controls.update();
+
+  if (envOpts.earthSpin) {
+    earth.rotation.y      += dt * 0.04;
+    clouds.rotation.y     += dt * 0.046;
+    atmosphere.rotation.y += dt * 0.04;
+  }
+  if (envOpts.shipDrift) {
+    starshipGroup.rotation.y += dt * 0.012;
+  }
+
+  // animate LEDs (rotating chase)
+  ledPhase += dt * 1.5;
+  ringLEDs.forEach((led, i) => {
+    const phase = ledPhase + i * 0.45;
+    const on = (Math.sin(phase) > 0.4);
+    led.material = on ? ledOnMat : ledOffMat;
+  });
+
+  // Camera record LED pulse
+  camLED.material.emissiveIntensity = 2.5 + Math.sin(now * 0.005) * 1.0;
+
+  // === Main render via composer ===
+  renderer.setScissorTest(false);
+  renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+  composer.render();
+
+  // === PiP overlay ===
+  updatePipCamera();
+  const r = pipRect();
+  // Convert DOM rect to renderer viewport (Y is bottom-origin in WebGL)
+  const dpr = renderer.getPixelRatio();
+  const x = r.left;
+  const y = window.innerHeight - r.bottom; // from bottom
+  const w = r.width;
+  const h = r.height;
+
+  renderer.autoClear = false;
+  renderer.clearDepth();
+  renderer.setScissorTest(true);
+  renderer.setViewport(x, y, w, h);
+  renderer.setScissor(x, y, w, h);
+  renderer.render(scene, pipCamera);
+  renderer.setScissorTest(false);
+  renderer.autoClear = true;
+
+  // HUD updates (DOM, throttled to ~10Hz)
+  if ((now | 0) % 100 < 50) {
+    updateJointDiag();
+    updateOrbital();
+  }
+  updateMET();
+  updateClock();
+
+  requestAnimationFrame(render);
+}
+
+/* =====================================================================
+   14. RESIZE
+   ================================================================== */
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
+  bloom.resolution.set(window.innerWidth, window.innerHeight);
+});
+
+/* =====================================================================
+   15. KICKOFF
+   ================================================================== */
+setTimeout(() => {
+  document.getElementById('loader').classList.add('hidden');
+  requestAnimationFrame(render);
+}, 600);
+
+/* =====================================================================
+   16. TAB NAVIGATION
+   ================================================================== */
+{
+  const hudEls = document.querySelectorAll(
+    '#panel-mission, #panel-spacecraft, #panel-orbital, #panel-joints,' +
+    '#panel-log, #panel-presets, #pip-wrap, #grid-overlay, #scanlines'
+  );
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.tab === tab)
+    );
+    const isSimulator = tab === 'simulator';
+
+    hudEls.forEach(el => { el.style.display = isSimulator ? '' : 'none'; });
+    renderer.domElement.style.display = isSimulator ? '' : 'none';
+
+    const guiEl = document.querySelector('.lil-gui.root');
+    if (guiEl) guiEl.style.display = isSimulator ? '' : 'none';
+
+    document.querySelectorAll('.tab-panel').forEach(p => {
+      p.style.display = (p.id === 'tab-' + tab) ? 'block' : 'none';
+    });
+  }
+
+  document.querySelectorAll('.tab-btn').forEach(btn =>
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab))
+  );
+}
+</script>
 
 </body>
 </html>
